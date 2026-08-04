@@ -127,7 +127,7 @@ const NotePanel: React.FC = () => {
     return (
         <div
             ref={panelRef}
-            className={`relative flex flex-col rounded-[12px] z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}
+            className={`relative flex flex-col rounded-[12px] overflow-hidden z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}
                 ${isResizing ? '' : 'transition-all duration-500'}`}
             style={{
                 width: `${notePanelWidth}px`,
@@ -149,7 +149,7 @@ const NotePanel: React.FC = () => {
 
             {/* Tabs Header */}
             <div
-                className="flex flex-col pt-2 px-2 pb-2 gap-1.5 no-drag-region shrink-0 relative transition-all duration-500"
+                className="flex flex-col pt-2 px-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
                 style={{ backgroundColor: '#424242' }}
             >
                 {/* Tab grid: 2 per row, 90% width, 10% right gap */}
@@ -166,16 +166,16 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group w-full pl-2 pr-1 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
+                            className={`group w-full pl-2 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
                                 ? 'text-slate-200 border-l-2 border-[var(--theme-primary)]'
-                                : 'text-white hover:text-white hover:bg-white/5 cursor-pointer border-l-2 border-transparent'
+                                : 'text-white cursor-pointer border-l-2 border-transparent'
                                 }`}
                         >
                             {note.isSettings ? t('settings') : note.title}
-                            <div className={`${note.id === activeNoteId ? 'flex' : 'hidden group-hover:flex'} items-center ml-auto`}>
+                            <div className="flex items-center ml-auto">
                                 <span
                                     onClick={(e) => handleDelete(e, note.id)}
-                                    className="material-symbols-outlined text-[9px] text-[#989898] hover:text-slate-200 hover:bg-slate-800 rounded-sm transition-all p-0.5"
+                                    className="material-symbols-outlined text-[9px] text-[#989898] hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5"
                                     title={t('closeTab')}
                                 >
                                     close
@@ -186,7 +186,7 @@ const NotePanel: React.FC = () => {
                 </div>
 
                 {/* Bottom Action Row: + (left), Plugins, Settings (right), right-aligned */}
-                <div className="flex items-center justify-end gap-0.5 pointer-events-auto">
+                <div className="flex items-center justify-end gap-0.5 w-[90%] pointer-events-auto">
                     <button
                         onClick={() => addNote()}
                         className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
