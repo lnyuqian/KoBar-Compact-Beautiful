@@ -2,9 +2,10 @@ import React from 'react';
 
 import { useAppStore } from '../../store/useAppStore';
 
-import { setIsResizingGlobal } from '../../App';
+import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 
 import TooltipButton from './TooltipButton';
+import { CartoonEye } from './MaskIcon';
 import EyeNotification from './EyeNotification';
 import { useExtensionRegistry } from '../extensions/extensionRegistry';
 
@@ -64,6 +65,13 @@ const Sidebar: React.FC = () => {
     React.useEffect(() => {
         if (window.api?.isDev) {
             window.api.isDev().then(setIsDev).catch(console.warn);
+        }
+        // Prefetch display topology so cross-monitor drag detection works immediately
+        // (avoid the async race where the info arrives after the user already started dragging)
+        if (window.api?.getDisplaysInfo) {
+            window.api.getDisplaysInfo().then(info => {
+                localDisplaysRef.current = info;
+            }).catch(() => { });
         }
     }, []);
 
@@ -359,6 +367,7 @@ const Sidebar: React.FC = () => {
                     setIsSidebarDragging(false);
                     setIsResizingGlobal(false);
                     useAppStore.getState().setIsDraggingGlobal(false);
+                    reEvaluateClickThrough();
                     return;
                 }
 
@@ -449,6 +458,7 @@ const Sidebar: React.FC = () => {
                 setIsSidebarDragging(false);
                 setIsResizingGlobal(false);
                 useAppStore.getState().setIsDraggingGlobal(false);
+                reEvaluateClickThrough();
             }
         };
         if (isSidebarDragging) {
@@ -570,15 +580,15 @@ const Sidebar: React.FC = () => {
                 className={`flex ${orientation === 'horizontal' ? 'flex-row pl-4 pr-2 h-full w-fit' : 'flex-col pt-4 pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
                     ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
-                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10') 
-                        : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl border border-[var(--theme-border)]'}`}
+                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)]') 
+                        : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl'}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
                     maxWidth: orientation === 'horizontal' ? `${calculatedMaxWidth}px` : undefined,
-                    borderLeft: orientation === 'horizontal' ? '' : (edgePosition === 'right' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : ''), 
-                    borderRight: orientation === 'horizontal' ? '' : (edgePosition === 'left' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : ''),
-                    borderTop: orientation === 'horizontal' && edgePosition === 'bottom' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '',
-                    borderBottom: orientation === 'horizontal' && edgePosition === 'top' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '',
+                    borderLeft: orientation === 'horizontal' ? '' : 'transparent',
+                    borderRight: orientation === 'horizontal' ? '' : 'transparent',
+                    borderTop: orientation === 'horizontal' ? 'transparent' : '',
+                    borderBottom: orientation === 'horizontal' ? 'transparent' : '',
                     backgroundColor: design === 'style2' 
                         ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
                         : 'var(--theme-bg-dark)'
@@ -589,7 +599,7 @@ const Sidebar: React.FC = () => {
                     className={`${orientation === 'horizontal' ? 'w-6 h-full -mr-2' : 'h-6 w-full -mb-2'} shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing`}
                     onMouseDown={handleSidebarDragStart}
                 >
-                    <div className={`${orientation === 'horizontal' ? 'w-1 h-8 ml-1' : 'w-8 h-1 mt-1'} bg-white/10 rounded-full transition-all`} style={{ zoom: iconScale }}></div>
+                    <span className="material-symbols-outlined text-[16px] text-[#989898] pointer-events-none" style={{ zoom: iconScale }}>drag_indicator</span>
                 </div>
 
                 <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
@@ -685,11 +695,11 @@ const Sidebar: React.FC = () => {
                             buttonRef={eyeButtonRef}
                             onMouseDown={handleEyeMouseDown}
                             onClick={handleEyeClick}
-                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group relative ${orientation === 'horizontal' ? '' : 'mt-2'}
-                                ${design === 'style2' ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/20 shadow-[0_0_20px_rgba(244,161,37,0.2)]'}`}
+                            className={`w-12 h-12 rounded-full text-primary flex items-center justify-center transition-all hover:bg-white/10 cursor-grab active:cursor-grabbing group relative shadow-[0_0_20px_rgba(255,255,255,0.05)] ${orientation === 'horizontal' ? '' : 'mt-2'}`}
+                            style={{ backgroundColor: '#282828' }}
                         >
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                                <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
+                                <CartoonEye size={34} />
                             </span>
                             {isDev && (
                                 <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
@@ -704,14 +714,12 @@ const Sidebar: React.FC = () => {
 
             <TooltipButton
                 label={t('toggleNotes')}
-                className={`absolute border flex items-center justify-center transition-all shadow-2xl z-[60] 
+                className={`absolute flex items-center justify-center transition-all shadow-2xl z-[60] 
                     ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
                     ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-slate-400 hover:text-primary hover:bg-white/5'}`}
                 style={{ 
-                    backgroundColor: design === 'style2' 
-                        ? (isMac ? 'transparent' : `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`) 
-                        : 'var(--theme-bg-dark)', 
-                    borderColor: design === 'style2' ? 'rgba(255,255,255,0.1)' : 'var(--theme-border)',
+                    backgroundColor: '#282828', 
+                    borderColor: 'transparent',
                     ...(orientation === 'horizontal'
                         ? {
                             left: '50%',

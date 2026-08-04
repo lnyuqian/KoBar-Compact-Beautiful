@@ -46,7 +46,7 @@ const EyeNotification: React.FC = () => {
                         let btnColorClass = 'bg-slate-700 hover:bg-slate-600 text-white';
                         if (btn.color === 'green') btnColorClass = 'bg-green-600 hover:bg-green-500 text-white';
                         if (btn.color === 'red') btnColorClass = 'bg-red-600 hover:bg-red-500 text-white';
-                        if (btn.color === 'blue') btnColorClass = 'bg-blue-600 hover:bg-blue-500 text-white';
+                        if (btn.color === 'blue') btnColorClass = 'bg-slate-600 hover:bg-slate-500 text-white';
                         if (btn.color === 'primary') btnColorClass = 'bg-primary/80 hover:bg-primary text-white';
                         
                         return (

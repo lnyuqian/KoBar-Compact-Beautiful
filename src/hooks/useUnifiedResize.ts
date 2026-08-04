@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { setIsResizingGlobal } from '../App';
+import { setIsResizingGlobal, reEvaluateClickThrough } from '../App';
 
 type ResizeDirection = 'side' | 'bottom' | 'corner';
 type ResizeTarget = 'note';
@@ -95,6 +95,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
             activeRef.current = false;
             setIsResizing(false);
             setIsResizingGlobal(false);
+            reEvaluateClickThrough();
 
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);

@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { setIsResizingGlobal } from '../../App';
+import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 import EyeNotification from './EyeNotification';
+import { CartoonEyeClosed } from './MaskIcon';
 
 const FloatingEye: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const miniModePosition = useAppStore(state => state.miniModePosition);
-    const design = useAppStore(state => state.design);
-    const glassOpacity = useAppStore(state => state.glassOpacity);
     const iconScale = useAppStore(state => state.iconScale);
     const screenBounds = useAppStore(state => state.screenBounds);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
@@ -163,6 +162,7 @@ const FloatingEye: React.FC = () => {
                 setIsDragging(false);
                 setIsResizingGlobal(false);
                 useAppStore.getState().setIsDraggingGlobal(false);
+                reEvaluateClickThrough();
 
                 if (dragInitRef.current.dragged) {
                     let finalPos = { x: posRef.current.x, y: posRef.current.y };
@@ -261,16 +261,13 @@ const FloatingEye: React.FC = () => {
         >
             <button 
                 ref={eyeButtonRef}
-                className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative
-                    ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') + ' shadow-[0_0_20px_rgba(255,255,255,0.05)]') : 'shadow-[0_0_20px_rgba(244,161,37,0.4)]'}`}
+                className={`w-12 h-12 rounded-full text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative shadow-[0_0_20px_rgba(255,255,255,0.05)]`}
                 style={{
-                    backgroundColor: design === 'style2' 
-                        ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
-                        : 'var(--theme-bg-dark)'
+                    backgroundColor: '#282828'
                 }}
             >
                 <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                    <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
+                    <CartoonEyeClosed size={34} />
                 </span>
                 {isDev && (
                     <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">

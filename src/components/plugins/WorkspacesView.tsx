@@ -168,16 +168,16 @@ const WorkspacesView: React.FC = () => {
                                 className="relative rounded-xl border overflow-hidden transition-all duration-300"
                                 style={{
                                     backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)',
-                                    borderColor: 'rgba(96, 165, 250, 0.2)',
-                                    boxShadow: '0 0 24px -6px rgba(96, 165, 250, 0.25), inset 0 1px 0 rgba(96, 165, 250, 0.08)',
+                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    boxShadow: '0 0 24px -6px rgba(255, 255, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3 p-5 pt-6">
                                     <div
                                         className="w-12 h-12 rounded-xl flex items-center justify-center"
-                                        style={{ backgroundColor: 'rgba(96, 165, 250, 0.12)' }}
+                                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
                                     >
-                                        <span className="material-symbols-outlined text-[24px]" style={{ color: '#60a5fa' }}>
+                                        <span className="material-symbols-outlined text-[24px]" style={{ color: '#808080' }}>
                                             tune
                                         </span>
                                     </div>
@@ -217,7 +217,7 @@ const WorkspacesView: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => updateWorkspaceSettings(preset.id)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors"
                                             title={(t as any)('updateWorkspaceSettings') || 'Update'}
                                         >
                                             <span className="material-symbols-outlined text-[16px]">save</span>

@@ -5,8 +5,6 @@ import NoteEditor from './NoteEditor';
 import SettingsPanel from './SettingsPanel';
 import PluginsPanel from '../plugins/PluginsPanel';
 import ResizerHandle from './ResizerHandle';
-import EmojiPicker, { Theme } from 'emoji-picker-react';
-import type { EmojiClickData } from 'emoji-picker-react';
 
 const NotePanel: React.FC = () => {
     const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
@@ -17,7 +15,6 @@ const NotePanel: React.FC = () => {
     const setActiveNoteId = useAppStore(state => state.setActiveNoteId);
     const addNote = useAppStore(state => state.addNote);
     const deleteNote = useAppStore(state => state.deleteNote);
-    const updateNoteEmoji = useAppStore(state => state.updateNoteEmoji);
     const t = useAppStore(state => state.t);
     const isHighlightingSettingsBtn = useAppStore(state => state.isHighlightingSettingsBtn);
     const isHighlightingPluginsBtn = useAppStore(state => state.isHighlightingPluginsBtn);
@@ -52,9 +49,6 @@ const NotePanel: React.FC = () => {
         if (!isResizing) setIsResizing(true);
     }, [isResizing]);
 
-    const [emojiPickerTabId, setEmojiPickerTabId] = useState<number | null>(null);
-    const [emojiPickerX, setEmojiPickerX] = useState<number>(0);
-    const emojiPickerRef = useRef<HTMLDivElement>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: number, x: number, y: number } | null>(null);
     const deleteConfirmRef = useRef<HTMLDivElement>(null);
 
@@ -70,23 +64,6 @@ const NotePanel: React.FC = () => {
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [deleteConfirm]);
-
-    // Close emoji picker on outside click
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            // Don't close if they clicked the trigger icon itself or the picker
-            if (target.closest('.emoji-trigger')) return;
-
-            if (emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
-                setEmojiPickerTabId(null);
-            }
-        };
-        if (emojiPickerTabId !== null) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [emojiPickerTabId]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
@@ -109,39 +86,6 @@ const NotePanel: React.FC = () => {
         setDeleteConfirm(null);
     };
 
-    const handleEmojiSelect = (emojiData: EmojiClickData) => {
-        if (emojiPickerTabId === null) return;
-        updateNoteEmoji(emojiPickerTabId, emojiData.emoji);
-        setEmojiPickerTabId(null);
-    };
-
-    const toggleEmojiPicker = (e: React.MouseEvent, tabId: number) => {
-        e.stopPropagation();
-        
-        if (emojiPickerTabId === tabId) {
-            setEmojiPickerTabId(null);
-            return;
-        }
-
-        // Calculate position relative to the container
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const parentRect = (e.currentTarget as HTMLElement).closest('.relative')?.getBoundingClientRect();
-        
-        if (parentRect) {
-            let leftPos = (rect.left - parentRect.left) + (rect.width / 2) - 150; // 150 is half of picker width (300)
-            
-            // Constrain within the panel (don't go off left/right edges)
-            const minPadding = 20;
-            const currentWidth = panelRef.current?.offsetWidth || 400;
-            const maxLeft = currentWidth - 320; // picker width (300) + padding
-            leftPos = Math.max(minPadding, Math.min(leftPos, maxLeft));
-            
-            setEmojiPickerX(leftPos);
-        }
-        
-        setEmojiPickerTabId(tabId);
-    };
-
     const tabsRef = useRef<HTMLDivElement>(null);
     const [isDraggingTabs, setIsDraggingTabs] = useState(false);
     const [startX, setStartX] = useState(0);
@@ -151,8 +95,8 @@ const NotePanel: React.FC = () => {
     const handleTabsMouseDown = (e: React.MouseEvent) => {
         if (!tabsRef.current) return;
         setIsDraggingTabs(true);
-        setStartX(e.pageX - tabsRef.current.offsetLeft);
-        setScrollLeftState(tabsRef.current.scrollLeft);
+        setStartX(e.pageY - tabsRef.current.offsetTop);
+        setScrollLeftState(tabsRef.current.scrollTop);
         setDragDistance(0);
     };
 
@@ -167,9 +111,9 @@ const NotePanel: React.FC = () => {
     const handleTabsMouseMove = (e: React.MouseEvent) => {
         if (!isDraggingTabs || !tabsRef.current) return;
         e.preventDefault();
-        const x = e.pageX - tabsRef.current.offsetLeft;
-        const walk = (x - startX) * 1.5; // Scroll speed multiplier
-        tabsRef.current.scrollLeft = scrollLeftState - walk;
+        const y = e.pageY - tabsRef.current.offsetTop;
+        const walk = (y - startX) * 1.5; // Scroll speed multiplier
+        tabsRef.current.scrollTop = scrollLeftState - walk;
         setDragDistance(Math.abs(walk));
     };
 
@@ -180,17 +124,10 @@ const NotePanel: React.FC = () => {
         }
     };
 
-    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-        if (e.currentTarget) {
-            e.currentTarget.scrollLeft += e.deltaY;
-        }
-    };
-
     return (
         <div
             ref={panelRef}
-            className={`relative flex flex-col border z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0 border-none'}
-                ${design === 'style2' ? 'rounded-[2.5rem]' : ''}
+            className={`relative flex flex-col rounded-[12px] z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}
                 ${isResizing ? '' : 'transition-all duration-500'}`}
             style={{
                 width: `${notePanelWidth}px`,
@@ -198,7 +135,7 @@ const NotePanel: React.FC = () => {
                 backgroundColor: design === 'style2'
                     ? `color-mix(in srgb, var(--theme-bg-base) ${glassOpacity}%, transparent)`
                     : 'var(--theme-bg-base)',
-                borderColor: design === 'style2' ? 'rgba(255, 255, 255, 0.1)' : 'var(--theme-border)',
+                borderColor: 'transparent',
                 backdropFilter: design === 'style2' ? (isMac ? 'blur(8px)' : 'blur(32px)') : 'none',
                 willChange: 'width, height'
             }}
@@ -211,52 +148,34 @@ const NotePanel: React.FC = () => {
             <ResizerHandle direction="corner" onResizeTemp={handleResizeTemp} onResizeEnd={() => setIsResizing(false)} />
 
             {/* Tabs Header */}
-            <div className={`flex items-end border-b pt-4 px-4 gap-6 no-drag-region shrink-0 relative transition-all duration-500
-                ${design === 'style2' ? 'bg-transparent border-white/5' : 'bg-[var(--theme-bg-dark)] border-[var(--theme-border)]'}`}>
+            <div
+                className="flex flex-col pt-2 px-2 pb-2 gap-1.5 no-drag-region shrink-0 relative transition-all duration-500"
+                style={{ backgroundColor: '#424242' }}
+            >
+                {/* Tab grid: 2 per row, 90% width, 10% right gap */}
                 <div
                     ref={tabsRef}
-                    onWheel={handleWheel}
                     onMouseDown={handleTabsMouseDown}
                     onMouseLeave={handleTabsMouseLeave}
                     onMouseUp={handleTabsMouseUp}
                     onMouseMove={handleTabsMouseMove}
-                    className={`flex-1 flex gap-2 overflow-x-auto scrollbar-hide snap-x select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid grid-cols-2 gap-1 w-[90%] max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
                 >
                     {notes.map((note) => (
                         <div
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 snap-start no-drag-region ${note.id === activeNoteId
-                                ? 'text-slate-200 border border-b-0 relative top-[1px]'
-                                : 'text-slate-400 hover:text-slate-200 cursor-pointer'
+                            className={`group w-full pl-2 pr-1 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
+                                ? 'text-slate-200 border-l-2 border-[var(--theme-primary)]'
+                                : 'text-white hover:text-white hover:bg-white/5 cursor-pointer border-l-2 border-transparent'
                                 }`}
-                            style={note.id === activeNoteId ? {
-                                backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)',
-                                borderColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)'
-                            } : {}}
                         >
-                            {/* Icon: emoji or Material icon */}
-                            <span
-                                onClick={(e) => {
-                                    if (note.isSettings || note.isPlugins) return;
-                                    toggleEmojiPicker(e, note.id);
-                                }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                className={`emoji-trigger ${note.isSettings || note.isPlugins ? '' : 'cursor-pointer hover:scale-110 transition-transform'}`}
-                                title={note.isSettings || note.isPlugins ? '' : t('changeIcon')}
-                            >
-                                {note.emoji ? (
-                                    <span className="text-[18px] pointer-events-none">{note.emoji}</span>
-                                ) : (
-                                    <span className="material-symbols-outlined text-[18px] pointer-events-none">{note.icon}</span>
-                                )}
-                            </span>
                             {note.isSettings ? t('settings') : note.title}
-                            <div className={`${note.id === activeNoteId ? 'flex' : 'hidden group-hover:flex'} items-center`}>
+                            <div className={`${note.id === activeNoteId ? 'flex' : 'hidden group-hover:flex'} items-center ml-auto`}>
                                 <span
                                     onClick={(e) => handleDelete(e, note.id)}
-                                    className="material-symbols-outlined text-[16px] ml-2 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-sm transition-all p-0.5"
+                                    className="material-symbols-outlined text-[9px] text-[#989898] hover:text-slate-200 hover:bg-slate-800 rounded-sm transition-all p-0.5"
                                     title={t('closeTab')}
                                 >
                                     close
@@ -264,30 +183,30 @@ const NotePanel: React.FC = () => {
                             </div>
                         </div>
                     ))}
-                    <button
-                        onClick={() => addNote()}
-                        className="px-3 py-2.5 text-slate-400 hover:text-slate-200 text-sm font-medium rounded-t-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
-                        title={t('addNewNote')}
-                    >
-                        <span className="material-symbols-outlined text-[18px]">add</span>
-                    </button>
                 </div>
 
-                {/* Top Right Action Buttons */}
-                <div className="mb-2 flex items-center gap-1 pointer-events-auto">
+                {/* Bottom Action Row: + (left), Plugins, Settings (right), right-aligned */}
+                <div className="flex items-center justify-end gap-0.5 pointer-events-auto">
+                    <button
+                        onClick={() => addNote()}
+                        className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
+                        title={t('addNewNote')}
+                    >
+                        <span className="material-symbols-outlined text-[12px]">add</span>
+                    </button>
                     <button
                         onClick={openPluginsTab}
-                        className={`p-1.5 transition-all flex items-center justify-center ${isHighlightingPluginsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-slate-500 hover:text-primary rounded-lg hover:bg-white/5'}`}
+                        className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingPluginsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={(t as any)('plugins') || 'Plugins'}
                     >
-                        <span className="material-symbols-outlined text-[22px]">extension</span>
+                        <span className="material-symbols-outlined text-[12px]">extension</span>
                     </button>
                     <button
                         onClick={openSettingsTab}
-                        className={`p-1.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-slate-500 hover:text-primary rounded-lg hover:bg-white/5'}`}
+                        className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={t('settings')}
                     >
-                        <span className="material-symbols-outlined text-[22px]">settings</span>
+                        <span className="material-symbols-outlined text-[12px]">settings</span>
                     </button>
                 </div>
 
@@ -327,37 +246,19 @@ const NotePanel: React.FC = () => {
                 )}
             </div>
 
-            {/* Emoji Picker Popover - Absolutely positioned within NotePanel */}
-            {emojiPickerTabId !== null && (
-                <div
-                    ref={emojiPickerRef}
-                    className="absolute z-[100] no-drag-region shadow-2xl rounded-xl overflow-hidden pointer-events-auto"
-                    style={{
-                        top: '80px', 
-                        left: `${emojiPickerX}px`,
-                        backgroundColor: 'var(--theme-bg-dark)',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                    }}
-                >
-                    <EmojiPicker
-                        onEmojiClick={handleEmojiSelect}
-                        theme={Theme.DARK}
-                        width={300}
-                        height={350}
-                        searchPlaceholder="Search emoji..."
-                        lazyLoadEmojis
-                    />
-                </div>
-            )}
-
             {/* Editor or Settings Area */}
-            {activeNote?.isSettings ? (
-                <SettingsPanel />
-            ) : activeNote?.isPlugins ? (
-                <PluginsPanel />
-            ) : (
-                <NoteEditor />
-            )}
+            <div
+                className="flex-1 flex flex-col overflow-hidden"
+                style={{ backgroundColor: '#535353' }}
+            >
+                {activeNote?.isSettings ? (
+                    <SettingsPanel />
+                ) : activeNote?.isPlugins ? (
+                    <PluginsPanel />
+                ) : (
+                    <NoteEditor />
+                )}
+            </div>
         </div>
     );
 };

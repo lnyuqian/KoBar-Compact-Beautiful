@@ -22,7 +22,41 @@ import { useExtensionRegistry } from './components/extensions/extensionRegistry'
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
 export let isResizingGlobal = false;
-export function setIsResizingGlobal(v: boolean) { isResizingGlobal = v; }
+
+// Watchdog: if a drag/resize start is never followed by an end (e.g. mouseup
+// fired outside the ghost window), the full-screen transparent window would
+// swallow all clicks forever. Auto-recover after 15s.
+let resizeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+export function setIsResizingGlobal(v: boolean) {
+    isResizingGlobal = v;
+    if (v) {
+        if (resizeWatchdogTimer) clearTimeout(resizeWatchdogTimer);
+        resizeWatchdogTimer = setTimeout(() => {
+            isResizingGlobal = false;
+            resizeWatchdogTimer = null;
+            reEvaluateClickThrough();
+        }, 15000);
+    } else {
+        if (resizeWatchdogTimer) {
+            clearTimeout(resizeWatchdogTimer);
+            resizeWatchdogTimer = null;
+        }
+    }
+}
+
+// Track last cursor position so we can re-evaluate click-through after drag/resize ends
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+// Re-evaluate the transparent window's mouse click-through state at the current cursor.
+// MUST be called after any drag/resize ends, otherwise the full-screen ghost window
+// keeps swallowing all clicks when the mouse stays still.
+export function reEvaluateClickThrough() {
+    if (isResizingGlobal) return;
+    const el = document.elementFromPoint(lastMouseX, lastMouseY);
+    const isSolid = el ? el.closest('.pointer-events-auto') !== null : false;
+    window.api?.setIgnoreMouseEvents(isSolid ? false : true);
+}
 
 // Set these flags for component-level feature toggling (managed by kobar-build.js)
 export const IS_STORE_BUILD = true;
@@ -271,6 +305,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
       // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
       // Do not allow the OS to steal the mouseup event through the ghost window.
       if (isResizingGlobal) {

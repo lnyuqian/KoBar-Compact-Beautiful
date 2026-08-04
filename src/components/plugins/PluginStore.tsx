@@ -213,7 +213,7 @@ const PluginStore: React.FC = () => {
                 ...ext,
                 name: isPlayground ? installedPlugin.name : ext.name,
                 icon: ext.icon || 'extension',
-                color: 'blue-500',
+                color: 'gray-500',
                 tags: (installedPlugin ? ['Installed'] : ['Not Installed']).concat((ext.isBeta || isPlayground) ? ['Beta'] : []),
                 installed: !!installedPlugin,
                 active: installedPlugin ? installedPlugin.enabled : false,
@@ -283,7 +283,7 @@ const PluginStore: React.FC = () => {
                 bg: 'bg-primary/10',
                 border: 'hover:border-primary/50',
                 text: 'text-primary',
-                gradient: 'from-primary/30 to-blue-500/20'
+                gradient: 'from-primary/30 to-slate-500/20'
             };
         }
         return {

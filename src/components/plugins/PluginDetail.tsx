@@ -174,7 +174,7 @@ const PluginDetail: React.FC = () => {
             return {
                 bg: 'bg-primary/10',
                 text: 'text-primary',
-                gradient: 'from-primary/30 to-blue-500/20'
+                gradient: 'from-primary/30 to-slate-500/20'
             };
         }
         return {
@@ -258,7 +258,7 @@ const PluginDetail: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <h2 className="text-2xl font-bold text-slate-100">{plugin.name}</h2>
                         {isApproved && (
-                            <span className="material-symbols-outlined text-blue-400 text-[18px]" title="Official/Approved">verified</span>
+                            <span className="material-symbols-outlined text-slate-400 text-[18px]" title="Official/Approved">verified</span>
                         )}
                     </div>
                     <span className="text-sm text-slate-400 italic mb-2">by {plugin.author} • {plugin.version}</span>
@@ -357,7 +357,7 @@ const PluginDetail: React.FC = () => {
                     <span className="text-[10px] text-slate-500 uppercase tracking-wider">Stars</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-white/5 border border-white/5">
-                    <span className="material-symbols-outlined text-blue-500 text-[20px] mb-1">fork_right</span>
+                    <span className="material-symbols-outlined text-slate-500 text-[20px] mb-1">fork_right</span>
                     <span className="text-lg font-bold text-slate-200">{loadingStats ? '...' : githubStats?.forks || '-'}</span>
                     <span className="text-[10px] text-slate-500 uppercase tracking-wider">Forks</span>
                 </div>

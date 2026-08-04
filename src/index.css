@@ -10,139 +10,153 @@
   --radius-lg: 2rem;
   --radius-xl: 3rem;
   --radius-full: 9999px;
+  /* Override slate palette with neutral grays (removes blue tint) */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f5f5f5;
+  --color-slate-200: #e5e5e5;
+  --color-slate-300: #d4d4d4;
+  --color-slate-400: #a3a3a3;
+  --color-slate-500: #737373;
+  --color-slate-600: #525252;
+  --color-slate-700: #404040;
+  --color-slate-800: #262626;
+  --color-slate-900: #171717;
+  --color-slate-950: #0a0a0a;
 }
 
 /* ===== THEME DEFINITIONS ===== */
+/* Monochrome palette: black = 90% black (#1A1A1A), each gray step is +20% brightness
+   (30% = #4D4D4D, 50% = #808080, 70% = #B3B3B3, 90% = #E6E6E6), white = pure white (#FFFFFF) */
 
-/* Ember (Default — warm amber) */
+/* Ember (Default) */
 :root,
 [data-theme="ember"] {
-  --theme-primary: #f4a125;
-  --theme-bg-dark: #1a1612;
-  --theme-bg-base: #1e1b17;
-  --theme-bg-light: #f8f7f5;
-  --theme-border: #3f362b;
-  --theme-surface: #14110e;
-  --theme-accent-glow: rgba(244, 161, 37, 0.15);
-  --theme-scrollbar: #3f362b;
-  --theme-marker: #f4a125;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Ocean (cool deep blue) */
+/* Ocean */
 [data-theme="ocean"] {
-  --theme-primary: #38bdf8;
-  --theme-bg-dark: #0c1524;
-  --theme-bg-base: #111b2e;
-  --theme-bg-light: #f0f4f8;
-  --theme-border: #1e3a5f;
-  --theme-surface: #080f1c;
-  --theme-accent-glow: rgba(56, 189, 248, 0.15);
-  --theme-scrollbar: #1e3a5f;
-  --theme-marker: #38bdf8;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Sakura (soft cherry-blossom pink) */
+/* Sakura */
 [data-theme="sakura"] {
-  --theme-primary: #f472b6;
-  --theme-bg-dark: #1c1018;
-  --theme-bg-base: #22141c;
-  --theme-bg-light: #fdf2f8;
-  --theme-border: #4a2040;
-  --theme-surface: #150c12;
-  --theme-accent-glow: rgba(244, 114, 182, 0.15);
-  --theme-scrollbar: #4a2040;
-  --theme-marker: #f472b6;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Emerald (deep forest green) */
+/* Emerald */
 [data-theme="emerald"] {
-  --theme-primary: #34d399;
-  --theme-bg-dark: #0c1a14;
-  --theme-bg-base: #111f19;
-  --theme-bg-light: #ecfdf5;
-  --theme-border: #1a4d3a;
-  --theme-surface: #08110d;
-  --theme-accent-glow: rgba(52, 211, 153, 0.15);
-  --theme-scrollbar: #1a4d3a;
-  --theme-marker: #34d399;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Midnight (deep indigo) */
+/* Midnight */
 [data-theme="midnight"] {
-  --theme-primary: #6366f1;
-  --theme-bg-dark: #0f172a;
-  --theme-bg-base: #1e293b;
-  --theme-bg-light: #f8fafc;
-  --theme-border: #334155;
-  --theme-surface: #020617;
-  --theme-accent-glow: rgba(99, 102, 241, 0.15);
-  --theme-scrollbar: #334155;
-  --theme-marker: #6366f1;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Amethyst (rich purple) */
+/* Amethyst */
 [data-theme="amethyst"] {
-  --theme-primary: #a855f7;
-  --theme-bg-dark: #1a1024;
-  --theme-bg-base: #21152d;
-  --theme-bg-light: #faf5ff;
-  --theme-border: #432b57;
-  --theme-surface: #120a1a;
-  --theme-accent-glow: rgba(168, 85, 247, 0.15);
-  --theme-scrollbar: #432b57;
-  --theme-marker: #a855f7;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Crimson (vibrant red) */
+/* Crimson */
 [data-theme="crimson"] {
-  --theme-primary: #f43f5e;
-  --theme-bg-dark: #1a0a0c;
-  --theme-bg-base: #210e11;
-  --theme-bg-light: #fff1f2;
-  --theme-border: #4c1d24;
-  --theme-surface: #120608;
-  --theme-accent-glow: rgba(244, 63, 94, 0.15);
-  --theme-scrollbar: #4c1d24;
-  --theme-marker: #f43f5e;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Nord (arctic blue-grey) */
+/* Nord */
 [data-theme="nord"] {
-  --theme-primary: #81a1c1;
-  --theme-bg-dark: #2e3440;
-  --theme-bg-base: #3b4252;
-  --theme-bg-light: #eceff4;
-  --theme-border: #4c566a;
-  --theme-surface: #242933;
-  --theme-accent-glow: rgba(129, 161, 193, 0.15);
-  --theme-scrollbar: #4c566a;
-  --theme-marker: #81a1c1;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Coffee (warm brown-gold) */
+/* Coffee */
 [data-theme="coffee"] {
-  --theme-primary: #d97706;
-  --theme-bg-dark: #1c1511;
-  --theme-bg-base: #241b16;
-  --theme-bg-light: #fffbeb;
-  --theme-border: #4a3728;
-  --theme-surface: #140f0c;
-  --theme-accent-glow: rgba(217, 119, 6, 0.15);
-  --theme-scrollbar: #4a3728;
-  --theme-marker: #d97706;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
-/* Lavender (soothing pastel purple) */
+/* Lavender */
 [data-theme="lavender"] {
-  --theme-primary: #a78bfa;
-  --theme-bg-dark: #17151c;
-  --theme-bg-base: #1d1b26;
-  --theme-bg-light: #f5f3ff;
-  --theme-border: #3e384d;
-  --theme-surface: #111015;
-  --theme-accent-glow: rgba(167, 139, 250, 0.15);
-  --theme-scrollbar: #3e384d;
-  --theme-marker: #a78bfa;
+  --theme-primary: #ffffff;
+  --theme-bg-dark: #1a1a1a;
+  --theme-bg-base: #4d4d4d;
+  --theme-bg-light: #ffffff;
+  --theme-border: #808080;
+  --theme-surface: #1a1a1a;
+  --theme-accent-glow: rgba(255, 255, 255, 0.15);
+  --theme-scrollbar: #808080;
+  --theme-marker: #ffffff;
 }
 
 /* Custom (user-defined — CSS vars applied via JavaScript inline styles) */
@@ -187,8 +201,8 @@
   }
 
   .radio-blue {
-    border-color: #3b82f6;
-    color: #3b82f6;
+    border-color: #808080;
+    color: #808080;
   }
 
   .radio-grey {
@@ -200,11 +214,12 @@
   }
 
   .custom-radio.radio-blue:checked {
-    border-color: #3b82f6;
+    border-color: #808080;
   }
 
   .material-symbols-outlined {
     user-select: none;
+    color: #989898;
   }
 
   ::-webkit-scrollbar {
@@ -287,8 +302,8 @@ body {
 .tiptap {
   outline: none;
   min-height: 200px;
-  color: #cbd5e1;
-  /* slate-300 */
+  color: #d4d4d4;
+  /* neutral gray-300 */
   font-size: 1.125rem;
   line-height: 1.75;
 }
@@ -300,8 +315,8 @@ body {
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #334155;
-  /* slate-700 */
+  color: #404040;
+  /* neutral gray-700 */
   pointer-events: none;
   height: 0;
   font-style: italic;
@@ -328,8 +343,8 @@ body {
 }
 
 .tiptap strong {
-  color: #e2e8f0;
-  /* slate-200 */
+  color: #e5e5e5;
+  /* neutral gray-200 */
   font-weight: 700;
 }
 

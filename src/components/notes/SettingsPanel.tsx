@@ -86,6 +86,10 @@ const SettingsPanel: React.FC = () => {
     const setIconScale = useAppStore(state => state.setIconScale);
     const featureSpacing = useAppStore(state => state.featureSpacing);
     const setFeatureSpacing = useAppStore(state => state.setFeatureSpacing);
+    const editorFontSize = useAppStore(state => state.editorFontSize);
+    const setEditorFontSize = useAppStore(state => state.setEditorFontSize);
+    const editorLineHeight = useAppStore(state => state.editorLineHeight);
+    const setEditorLineHeight = useAppStore(state => state.setEditorLineHeight);
     const design = useAppStore(state => state.design);
     const setDesign = useAppStore(state => state.setDesign);
     const glassOpacity = useAppStore(state => state.glassOpacity);
@@ -333,6 +337,20 @@ const SettingsPanel: React.FC = () => {
         }
     };
 
+    const handleEditorFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+            setEditorFontSize(Math.min(32, Math.max(12, val)));
+        }
+    };
+
+    const handleEditorLineHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) {
+            setEditorLineHeight(Math.min(3, Math.max(1, val)));
+        }
+    };
+
     const handleExport = (type: 'settings' | 'data', method: 'download' | 'email') => {
         const state = useAppStore.getState();
         let payload: any = {};
@@ -562,6 +580,47 @@ const SettingsPanel: React.FC = () => {
                                     />
                                 </div>
 
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm text-slate-400 font-medium">{t('editorFontSizeConfig')}</label>
+                                        <span className="text-base font-bold text-primary">{editorFontSize}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="12"
+                                        max="32"
+                                        value={editorFontSize}
+                                        onChange={handleEditorFontSizeChange}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onTouchStart={(e) => e.stopPropagation()}
+                                        onDragStart={(e) => e.stopPropagation()}
+                                        draggable={false}
+                                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
+                                        style={{ accentColor: 'var(--theme-primary)' }}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm text-slate-400 font-medium">{t('editorLineHeightConfig')}</label>
+                                        <span className="text-base font-bold text-primary">{editorLineHeight.toFixed(2)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="3"
+                                        step="0.05"
+                                        value={editorLineHeight}
+                                        onChange={handleEditorLineHeightChange}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onTouchStart={(e) => e.stopPropagation()}
+                                        onDragStart={(e) => e.stopPropagation()}
+                                        draggable={false}
+                                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
+                                        style={{ accentColor: 'var(--theme-primary)' }}
+                                    />
+                                </div>
+
                                 <div className="w-full h-px bg-white/5 my-2"></div>
 
                                 <div className="flex items-center justify-between">
@@ -671,22 +730,22 @@ const SettingsPanel: React.FC = () => {
                             <label className="text-sm text-slate-400 font-medium">{t('themeColor')}</label>
                             <div className="grid grid-cols-5 gap-4 mt-2">
                                 {[
-                                    { id: 'ember', name: 'Ember', color: '#f4a125' },
-                                    { id: 'ocean', name: 'Ocean', color: '#38bdf8' },
-                                    { id: 'sakura', name: 'Sakura', color: '#f472b6' },
-                                    { id: 'emerald', name: 'Emerald', color: '#34d399' },
-                                    { id: 'midnight', name: 'Midnight', color: '#6366f1' },
-                                    { id: 'amethyst', name: 'Amethyst', color: '#a855f7' },
-                                    { id: 'crimson', name: 'Crimson', color: '#f43f5e' },
-                                    { id: 'nord', name: 'Nord', color: '#81a1c1' },
-                                    { id: 'coffee', name: 'Coffee', color: '#d97706' },
-                                    { id: 'lavender', name: 'Lavender', color: '#a78bfa' }
+                                    { id: 'ember', name: 'Ember', color: '#1a1a1a' },
+                                    { id: 'ocean', name: 'Ocean', color: '#4d4d4d' },
+                                    { id: 'sakura', name: 'Sakura', color: '#808080' },
+                                    { id: 'emerald', name: 'Emerald', color: '#b3b3b3' },
+                                    { id: 'midnight', name: 'Midnight', color: '#e6e6e6' },
+                                    { id: 'amethyst', name: 'Amethyst', color: '#ffffff' },
+                                    { id: 'crimson', name: 'Crimson', color: '#1a1a1a' },
+                                    { id: 'nord', name: 'Nord', color: '#4d4d4d' },
+                                    { id: 'coffee', name: 'Coffee', color: '#808080' },
+                                    { id: 'lavender', name: 'Lavender', color: '#b3b3b3' }
                                 ].map((themeItem) => (
                                     <button
                                         key={themeItem.id}
                                         onClick={() => setTheme(themeItem.id as any)}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all no-drag-region ${theme === themeItem.id
-                                            ? 'ring-2 ring-offset-2 ring-offset-[#1a1612] scale-110 shadow-lg'
+                                            ? 'ring-2 ring-offset-2 ring-offset-[#535353] scale-110 shadow-lg'
                                             : 'hover:scale-105 opacity-80 hover:opacity-100'
                                             }`}
                                         style={{

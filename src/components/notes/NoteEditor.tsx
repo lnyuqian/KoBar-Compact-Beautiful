@@ -10,9 +10,12 @@ import { useSpeechToText } from '../../hooks/useSpeechToText';
 const NoteEditor: React.FC = React.memo(() => {
     const { activeNoteId, updateNoteTitle, t, design, language } = useAppStore();
     const activeNote = useAppStore((state) => state.notes.find(n => n.id === activeNoteId));
+    const editorFontSize = useAppStore((state) => state.editorFontSize);
+    const editorLineHeight = useAppStore((state) => state.editorLineHeight);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isUpdatingFromStore = useRef(false);
     const [, setTick] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
 
     const editor = useEditor({
         extensions: [
@@ -194,13 +197,38 @@ const NoteEditor: React.FC = React.memo(() => {
         fileInputRef.current?.click();
     }, []);
 
+    // Apply typography settings (font size & line height) to the editor DOM
+    useEffect(() => {
+        if (!editor) return;
+        editor.view.dom.style.fontSize = `${editorFontSize}px`;
+        editor.view.dom.style.lineHeight = String(editorLineHeight);
+    }, [editor, editorFontSize, editorLineHeight]);
+
+    // Edit / Read mode: only allow editing when isEditing is true
+    useEffect(() => {
+        if (!editor) return;
+        editor.setEditable(isEditing);
+    }, [editor, isEditing]);
+
+    const enterEditMode = useCallback(() => {
+        setIsEditing(true);
+        setTimeout(() => {
+            editor?.chain().focus().run();
+        }, 0);
+    }, [editor]);
+
+    const exitEditMode = useCallback(() => {
+        setIsEditing(false);
+        editor?.commands.blur();
+    }, [editor]);
+
 
 
     if (!editor || !activeNote) return null;
 
     return (
         <div
-            className={`flex-1 p-8 flex flex-col overflow-y-auto w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
+            className={`relative flex-1 p-5 flex flex-col overflow-y-auto w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
         >
             {/* Hidden file input for image selection */}
             <input
@@ -212,38 +240,52 @@ const NoteEditor: React.FC = React.memo(() => {
             />
 
             {/* Title area */}
-            <div className="flex items-center gap-4 mb-6 no-drag-region">
+            <div className="flex items-center gap-4 mb-2 no-drag-region">
                 <input
-                    className="bg-transparent text-4xl font-bold text-slate-100 border-none outline-none w-full focus:ring-0 placeholder-slate-700"
+                    className={`bg-transparent font-normal text-slate-100 border-none outline-none w-full focus:ring-0 placeholder-slate-700 ${isEditing ? '' : 'opacity-70 cursor-default'}`}
+                    style={{ fontSize: editorFontSize + 6 }}
                     placeholder={t('noteTitlePlaceholder')}
                     type="text"
                     value={activeNote.title}
+                    disabled={!isEditing}
                     onChange={(e) => updateNoteTitle(activeNote.id, e.target.value)}
                 />
             </div>
 
-            {/* Formatting Toolbar */}
-            <div className="flex items-center gap-4 mb-8 pb-4 border-b text-slate-400 no-drag-region" style={{ borderColor: 'var(--theme-border)' }}>
+            {/* Read Mode Floating Edit Button */}
+            {!isEditing && (
+                <button
+                    onClick={enterEditMode}
+                    className="absolute top-5 right-5 z-10 flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all no-drag-region cursor-pointer"
+                    title="Edit"
+                >
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                </button>
+            )}
+
+            {/* Formatting Toolbar (Edit Mode Only) */}
+            {isEditing && (
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b text-slate-400 no-drag-region" style={{ borderColor: 'var(--theme-border)' }}>
                 <button
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     className={`hover:text-slate-200 transition-colors cursor-pointer ${editor.isActive('bold') ? 'text-primary' : ''}`}
                     title="Bold"
                 >
-                    <span className="material-symbols-outlined text-[20px]">format_bold</span>
+                    <span className="material-symbols-outlined text-[18px]">format_bold</span>
                 </button>
                 <button
                     onClick={() => editor.chain().focus().toggleItalic().run()}
                     className={`hover:text-slate-200 transition-colors cursor-pointer ${editor.isActive('italic') ? 'text-primary' : ''}`}
                     title="Italic"
                 >
-                    <span className="material-symbols-outlined text-[20px]">format_italic</span>
+                    <span className="material-symbols-outlined text-[18px]">format_italic</span>
                 </button>
                 <button
                     onClick={() => editor.chain().focus().toggleUnderline().run()}
                     className={`hover:text-slate-200 transition-colors cursor-pointer ${editor.isActive('underline') ? 'text-primary' : ''}`}
                     title="Underline"
                 >
-                    <span className="material-symbols-outlined text-[20px]">format_underlined</span>
+                    <span className="material-symbols-outlined text-[18px]">format_underlined</span>
                 </button>
                 <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
                 <button
@@ -251,14 +293,14 @@ const NoteEditor: React.FC = React.memo(() => {
                     className={`hover:text-slate-200 transition-colors cursor-pointer ${editor.isActive('bulletList') ? 'text-primary' : ''}`}
                     title="Bullet List"
                 >
-                    <span className="material-symbols-outlined text-[20px]">format_list_bulleted</span>
+                    <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
                 </button>
                 <button
                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
                     className={`hover:text-slate-200 transition-colors cursor-pointer ${editor.isActive('orderedList') ? 'text-primary' : ''}`}
                     title="Numbered List"
                 >
-                    <span className="material-symbols-outlined text-[20px]">format_list_numbered</span>
+                    <span className="material-symbols-outlined text-[18px]">format_list_numbered</span>
                 </button>
                 <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
                 <button
@@ -266,7 +308,7 @@ const NoteEditor: React.FC = React.memo(() => {
                     className="hover:text-slate-200 transition-colors cursor-pointer"
                     title="Insert Image"
                 >
-                    <span className="material-symbols-outlined text-[20px]">image</span>
+                    <span className="material-symbols-outlined text-[18px]">image</span>
                 </button>
                 {isSupported && (
                     <>
@@ -278,17 +320,30 @@ const NoteEditor: React.FC = React.memo(() => {
                                 ${error ? 'text-red-500' : ''}`}
                             title={error ? `${t('voiceToText')}: ${error}` : (isListening ? t('listening') : t('voiceToText'))}
                         >
-                            <span className="material-symbols-outlined text-[20px]">
+                            <span className="material-symbols-outlined text-[18px]">
                                 {error ? 'mic_off' : 'mic'}
                             </span>
                             {isListening && <span className="text-[10px] font-bold uppercase tracking-wider">{t('listening')}</span>}
                         </button>
                     </>
                 )}
+                <div className="flex-1"></div>
+                <button
+                    onClick={exitEditMode}
+                    className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all cursor-pointer"
+                    title={t('doneEditing')}
+                >
+                    <span className="material-symbols-outlined text-[16px]">check</span>
+                </button>
             </div>
+            )}
 
             {/* Tiptap Editor Content */}
-            <EditorContent editor={editor} className="flex-1 overflow-y-auto no-drag-region" />
+            <EditorContent
+                editor={editor}
+                className={`flex-1 overflow-y-auto no-drag-region ${isEditing ? '' : 'cursor-text'}`}
+                onDoubleClick={enterEditMode}
+            />
         </div>
     );
 });

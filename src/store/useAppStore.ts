@@ -253,6 +253,12 @@ interface AppState {
     featureSpacing: number;
     setFeatureSpacing: (val: number) => void;
 
+    // Editor Typography
+    editorFontSize: number;
+    setEditorFontSize: (val: number) => void;
+    editorLineHeight: number;
+    setEditorLineHeight: (val: number) => void;
+
 
 
     // Launch at Startup
@@ -501,6 +507,12 @@ export const useAppStore = create<AppState>()(
             setToggleWidth: (val) => set({ toggleWidth: val }),
             featureSpacing: 8, // Feature Spacing
             setFeatureSpacing: (val) => set({ featureSpacing: val }),
+
+            // Editor Typography
+            editorFontSize: 18, // px
+            setEditorFontSize: (val) => set({ editorFontSize: val }),
+            editorLineHeight: 1.75,
+            setEditorLineHeight: (val) => set({ editorLineHeight: val }),
 
             // Launch at Startup
             launchAtStartup: true,
@@ -798,8 +810,17 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 20,
+            version: 21,
             migrate: (persistedState: any, version: number) => {
+                // version 21 migration for editor typography settings
+                if (version <= 20) {
+                    if (persistedState.editorFontSize === undefined) {
+                        persistedState.editorFontSize = 18;
+                    }
+                    if (persistedState.editorLineHeight === undefined) {
+                        persistedState.editorLineHeight = 1.75;
+                    }
+                }
                 // version 20 migration for tutorial state
                 if (version <= 19) {
                     if (persistedState.tutorialState === undefined) {
@@ -1000,6 +1021,9 @@ export const useAppStore = create<AppState>()(
                 featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
+
+                editorFontSize: state.editorFontSize,
+                editorLineHeight: state.editorLineHeight,
 
 
 
