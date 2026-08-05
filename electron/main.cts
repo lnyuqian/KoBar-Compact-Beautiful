@@ -225,6 +225,7 @@ function createWindow() {
     });
 
     let saveBoundsTimeout: ReturnType<typeof setTimeout>;
+    let lastResetSentAt = 0;
     mainWindow.on('move', () => {
         if (isEyeDropperActive) return;
         clearTimeout(saveBoundsTimeout);
@@ -237,6 +238,15 @@ function createWindow() {
                 console.error('Failed to save window state:', err);
             }
         }, 500);
+
+        // Window moved (external or system-triggered): tell the frontend to re-sync its
+        // floating position and click-through state. Throttled so drag-driven moves
+        // (which the renderer manages itself) don't cause churn.
+        const now = Date.now();
+        if (now - lastResetSentAt > 500) {
+            lastResetSentAt = now;
+            mainWindow?.webContents.send('reset-ui-position');
+        }
     });
 
     // Re-enforce Always on Top when losing focus to taskbar

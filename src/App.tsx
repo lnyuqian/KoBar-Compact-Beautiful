@@ -268,13 +268,24 @@ const App: React.FC = () => {
       }));
     }
     if (window.api?.onResetUiPosition) {
-      // Window was moved externally (teleport/tray). Reset the floating position so the
-      // sidebar/panel DOM coordinates realign with the new window position. Without this,
-      // click targets drift away from the visuals and clicks pass through to apps below.
+      // Window was moved externally (teleport/tray/system). Reset the floating position so the
+      // sidebar/panel DOM coordinates realign with the new window position, and re-evaluate
+      // click-through so the ghost window never stays stuck swallowing clicks.
       unsubs.push(window.api.onResetUiPosition(() => {
-        useAppStore.getState().setSidebarPosition(null);
+        const st = useAppStore.getState();
+        if (isResizingGlobal || st.isDraggingGlobal) return; // skip during active drag/resize
+        st.setSidebarPosition(null);
+        reEvaluateClickThrough();
       }));
     }
+
+    // Self-healing: periodically re-evaluate click-through at the last known cursor position.
+    // Fixes the "UI becomes transparent after ~1h" scenario where no mousemove event arrives
+    // to flip the ignore-mouse state back after a monitor sleep / external window move.
+    const clickThroughTimer = setInterval(() => {
+      reEvaluateClickThrough();
+    }, 60000);
+    unsubs.push(() => clearInterval(clickThroughTimer));
     if (window.api?.onOpenSettings) {
       unsubs.push(window.api.onOpenSettings(() => {
         useAppStore.getState().setMiniMode(false);
