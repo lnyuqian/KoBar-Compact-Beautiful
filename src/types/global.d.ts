@@ -14,6 +14,7 @@ declare global {
             hideApp: () => void;
             quitApp: () => void;
             onForceCenterMiniMode: (callback: () => void) => (() => void);
+            onResetUiPosition: (callback: () => void) => (() => void);
             onEdgeChanged: (callback: (edge: 'left' | 'right', bounds?: any) => void) => void;
             getScreenBounds: () => Promise<any>;
             getDisplaysInfo: () => Promise<{ primaryDisplay: any, allDisplays: any[] }>;

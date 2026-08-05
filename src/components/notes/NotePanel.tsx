@@ -159,7 +159,7 @@ const NotePanel: React.FC = () => {
                     onMouseLeave={handleTabsMouseLeave}
                     onMouseUp={handleTabsMouseUp}
                     onMouseMove={handleTabsMouseMove}
-                    className={`grid grid-cols-2 gap-1 w-[90%] max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid grid-cols-2 gap-1 w-[93%] max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
                 >
                     {notes.map((note) => (
                         <div
@@ -186,7 +186,7 @@ const NotePanel: React.FC = () => {
                 </div>
 
                 {/* Bottom Action Row: + (left), Plugins, Settings (right), right-aligned */}
-                <div className="flex items-center justify-end gap-0.5 w-[90%] pointer-events-auto">
+                <div className="flex items-center justify-end gap-0.5 w-[93%] pointer-events-auto">
                     <button
                         onClick={() => addNote()}
                         className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"

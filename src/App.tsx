@@ -267,6 +267,14 @@ const App: React.FC = () => {
         useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : 3000, y: Math.floor(visibleHeight / 2) });
       }));
     }
+    if (window.api?.onResetUiPosition) {
+      // Window was moved externally (teleport/tray). Reset the floating position so the
+      // sidebar/panel DOM coordinates realign with the new window position. Without this,
+      // click targets drift away from the visuals and clicks pass through to apps below.
+      unsubs.push(window.api.onResetUiPosition(() => {
+        useAppStore.getState().setSidebarPosition(null);
+      }));
+    }
     if (window.api?.onOpenSettings) {
       unsubs.push(window.api.onOpenSettings(() => {
         useAppStore.getState().setMiniMode(false);

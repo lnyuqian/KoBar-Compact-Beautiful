@@ -342,6 +342,10 @@ function teleportToPrimaryCenter(showWindow = true) {
     // Re-detect edge and send updated screen bounds to the frontend
     handleWindowMove(true);
 
+    // The window was moved externally; tell the frontend to reset its floating
+    // position so the visual UI and the actual click targets stay aligned.
+    mainWindow.webContents.send('reset-ui-position');
+
     // Force the frontend to reset to Mini Mode and position perfectly at the center
     mainWindow.webContents.send('force-center-mini-mode');
 }

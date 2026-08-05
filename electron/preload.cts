@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('teleport-triggered', handler);
         return () => ipcRenderer.removeListener('teleport-triggered', handler);
     },
+    // Window moved externally (teleport/tray): reset frontend floating position so UI stays in sync
+    onResetUiPosition: (callback: () => void) => {
+        const handler = () => callback();
+        ipcRenderer.on('reset-ui-position', handler);
+        return () => ipcRenderer.removeListener('reset-ui-position', handler);
+    },
     // Clipboard Manager
     startClipboardListener: () => ipcRenderer.send('start-clipboard-listener'),
     stopClipboardListener: () => ipcRenderer.send('stop-clipboard-listener'),
