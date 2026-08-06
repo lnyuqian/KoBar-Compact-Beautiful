@@ -201,7 +201,7 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group w-full pl-2 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
+                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
                                 ? 'text-slate-200 border-l-2 border-[var(--theme-primary)]'
                                 : 'text-white cursor-pointer border-l-2 border-transparent'
                                 }`}
@@ -210,7 +210,7 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} text-[6.3px] cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} text-[18.9px] cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
                                     {isFavorite(note.id) ? 'star' : 'star_border'}
@@ -220,7 +220,7 @@ const NotePanel: React.FC = () => {
                             {/* Close: hidden until the tab is hovered, 0.7x smaller */}
                             <span
                                 onClick={(e) => handleDelete(e, note.id)}
-                                className="material-symbols-rounded text-[5px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
+                                className="material-symbols-rounded text-[3.5px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
                                 title={t('closeTab')}
                             >
                                 close
