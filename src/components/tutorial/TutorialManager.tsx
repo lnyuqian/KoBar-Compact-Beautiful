@@ -16,7 +16,6 @@ const TutorialManager: React.FC = () => {
     const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
     const setIsHighlightingToggleNotes = useAppStore(state => state.setIsHighlightingToggleNotes);
     const setIsHighlightingSettingsBtn = useAppStore(state => state.setIsHighlightingSettingsBtn);
-    const setIsHighlightingPluginsBtn = useAppStore(state => state.setIsHighlightingPluginsBtn);
     const setActiveNoteId = useAppStore(state => state.setActiveNoteId);
     const notes = useAppStore(state => state.notes);
     const activeNoteId = useAppStore(state => state.activeNoteId);
@@ -49,7 +48,6 @@ const TutorialManager: React.FC = () => {
             clearTimers();
             setIsHighlightingToggleNotes(false);
             setIsHighlightingSettingsBtn(false);
-            setIsHighlightingPluginsBtn(false);
             hideEyeNotification();
         };
     }, []);
@@ -100,7 +98,6 @@ const TutorialManager: React.FC = () => {
         clearTimers();
         setIsHighlightingToggleNotes(false);
         setIsHighlightingSettingsBtn(false);
-        setIsHighlightingPluginsBtn(false);
         setStep(-2); // End state
         
         showEyeNotification({
@@ -204,9 +201,9 @@ const TutorialManager: React.FC = () => {
         const state = useAppStore.getState();
         const activeNote = state.notes.find(n => n.id === state.activeNoteId);
         
-        if (activeNote?.isSettings || activeNote?.isPlugins) {
+        if (activeNote?.isSettings) {
             // Switch to the first normal note, or add one
-            const normalNote = state.notes.find(n => !n.isSettings && !n.isPlugins);
+            const normalNote = state.notes.find(n => !n.isSettings);
             if (normalNote) {
                 setActiveNoteId(normalNote.id);
             } else {
@@ -234,8 +231,8 @@ const TutorialManager: React.FC = () => {
         // Ensure settings/plugins are closed
         const state = useAppStore.getState();
         const aNote = state.notes.find(n => n.id === state.activeNoteId);
-        if (aNote?.isSettings || aNote?.isPlugins) {
-            const normalNote = state.notes.find(n => !n.isSettings && !n.isPlugins);
+        if (aNote?.isSettings) {
+            const normalNote = state.notes.find(n => !n.isSettings);
             if (normalNote) state.setActiveNoteId(normalNote.id);
             else state.addNote();
         }
@@ -272,60 +269,6 @@ const TutorialManager: React.FC = () => {
 
         showEyeNotification({
             message: (t as any)('tutorialStep4Message'),
-            buttons: [
-                { label: (t as any)('tutorialBtnOk'), color: "green", onClick: () => startStep5() },
-                { label: (t as any)('tutorialBtnTerminate'), color: "red", onClick: () => showFarewell('complete') }
-            ]
-        });
-
-        addTimer(() => {
-            startStep5();
-        }, 7000);
-    };
-
-    const startStep5 = () => {
-        setStep(5);
-        clearTimers();
-        
-        // Close settings, switch to normal note
-        const state = useAppStore.getState();
-        const normalNote = state.notes.find(n => !n.isSettings && !n.isPlugins);
-        if (normalNote) state.setActiveNoteId(normalNote.id);
-        else state.addNote();
-
-        setIsHighlightingPluginsBtn(true);
-
-        showEyeNotification({
-            message: (t as any)('tutorialStep5Message'),
-            buttons: [
-                { label: (t as any)('tutorialBtnOk'), color: "green", onClick: () => {
-                    useAppStore.getState().openPluginsTab();
-                    startStep6();
-                }},
-                { label: (t as any)('tutorialBtnTerminate'), color: "red", onClick: () => showFarewell('complete') }
-            ]
-        });
-
-        addTimer(() => {
-            useAppStore.getState().openPluginsTab();
-            startStep6();
-        }, 10000);
-    };
-
-    useEffect(() => {
-        if (step === 5 && activeNote?.isPlugins) {
-            clearTimers();
-            startStep6();
-        }
-    }, [activeNote?.isPlugins, step]);
-
-    const startStep6 = () => {
-        setStep(6);
-        clearTimers();
-        setIsHighlightingPluginsBtn(false);
-
-        showEyeNotification({
-            message: (t as any)('tutorialStep6Message'),
             buttons: [
                 { label: (t as any)('tutorialBtnOk'), color: "green", onClick: () => showFarewell('complete') },
                 { label: (t as any)('tutorialBtnTerminate'), color: "red", onClick: () => showFarewell('complete') }

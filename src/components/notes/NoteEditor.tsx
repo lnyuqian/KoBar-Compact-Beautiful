@@ -357,7 +357,7 @@ const NoteEditor: React.FC = React.memo(() => {
                     className="absolute top-5 right-[7%] z-10 flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all no-drag-region cursor-pointer"
                     title="Edit"
                 >
-                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                    <span className="material-symbols-rounded text-[16px]">edit</span>
                 </button>
             )}
 

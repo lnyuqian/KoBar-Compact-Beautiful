@@ -63,7 +63,13 @@ export interface Note {
     emoji: string | null;
     content: string;
     isSettings?: boolean;
-    isPlugins?: boolean;
+}
+
+export interface FavoriteNote {
+    id: number;
+    title: string;
+    content: string;
+    createdAt: number;
 }
 
 export interface EyeNotificationButton {
@@ -159,8 +165,6 @@ interface AppState {
     setIsHighlightingToggleNotes: (val: boolean) => void;
     isHighlightingSettingsBtn: boolean;
     setIsHighlightingSettingsBtn: (val: boolean) => void;
-    isHighlightingPluginsBtn: boolean;
-    setIsHighlightingPluginsBtn: (val: boolean) => void;
 
     // Eye Notification
     eyeNotification: EyeNotificationData | null;
@@ -172,7 +176,11 @@ interface AppState {
     updateNoteTitle: (id: number, title: string) => void;
     updateNoteEmoji: (id: number, emoji: string) => void;
     openSettingsTab: () => void;
-    openPluginsTab: () => void;
+    // Favorites (permanently saved documents)
+    favorites: FavoriteNote[];
+    toggleFavorite: (noteId: number) => void;
+    deleteFavorite: (favId: number) => void;
+    openFavorite: (favId: number) => void;
     // App Launcher
 
     // Theme
@@ -292,20 +300,6 @@ interface AppState {
     activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     extensionReloadTrigger: number;
     triggerExtensionReload: () => void;
-    pluginsTabSubMenu: 'store' | 'installed' | 'updates' | 'workspaces' | 'features';
-    setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'updates' | 'workspaces' | 'features') => void;
-    extensionsSubTab: 'installed' | 'marketplace';
-    setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
-    pluginsViewMode: 'grid' | 'list';
-    setPluginsViewMode: (mode: 'grid' | 'list') => void;
-    selectedPluginId: string | null;
-    setSelectedPluginId: (id: string | null) => void;
-    externalPluginsList: any[];
-    setExternalPluginsList: (list: any[]) => void;
-    pluginsSearchQuery: string;
-    setPluginsSearchQuery: (query: string) => void;
-    pluginsSelectedTags: string[];
-    setPluginsSelectedTags: (tags: string[]) => void;
 
     // Workspaces
     workspaces: WorkspaceConfig[];
@@ -369,20 +363,6 @@ export const useAppStore = create<AppState>()(
             activeExtensionAnchorRect: null,
             extensionReloadTrigger: 0,
             triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
-            pluginsTabSubMenu: 'store',
-            setPluginsTabSubMenu: (tab) => set({ pluginsTabSubMenu: tab }),
-            extensionsSubTab: 'installed',
-            setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
-            pluginsViewMode: 'grid',
-            setPluginsViewMode: (mode) => set({ pluginsViewMode: mode }),
-            selectedPluginId: null,
-            setSelectedPluginId: (id) => set({ selectedPluginId: id }),
-            externalPluginsList: [],
-            setExternalPluginsList: (list) => set({ externalPluginsList: list }),
-            pluginsSearchQuery: '',
-            setPluginsSearchQuery: (query) => set({ pluginsSearchQuery: query }),
-            pluginsSelectedTags: [],
-            setPluginsSelectedTags: (tags) => set({ pluginsSelectedTags: tags }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
             orientation: 'vertical',
@@ -600,8 +580,6 @@ export const useAppStore = create<AppState>()(
             setIsHighlightingToggleNotes: (val) => set({ isHighlightingToggleNotes: val }),
             isHighlightingSettingsBtn: false,
             setIsHighlightingSettingsBtn: (val) => set({ isHighlightingSettingsBtn: val }),
-            isHighlightingPluginsBtn: false,
-            setIsHighlightingPluginsBtn: (val) => set({ isHighlightingPluginsBtn: val }),
 
             // Eye Notification
             eyeNotification: null,
@@ -665,29 +643,46 @@ export const useAppStore = create<AppState>()(
                     nextNoteId: nextId,
                 };
             }),
-            openPluginsTab: () => set((state) => {
-                let pluginsNote = state.notes.find(n => n.isPlugins);
-                let nextNotes = state.notes;
-                let nextId = state.nextNoteId;
-
-                if (!pluginsNote) {
-                    pluginsNote = {
-                        id: state.nextNoteId,
-                        title: state.t ? (state.t as any)('plugins') || 'Plugins' : 'Plugins',
-                        icon: 'extension',
-                        emoji: null,
-                        content: '',
-                        isPlugins: true,
-                    };
-                    nextNotes = [...state.notes, pluginsNote];
-                    nextId++;
+            // Favorites: permanently saved documents that survive tab deletion
+            favorites: [],
+            toggleFavorite: (noteId) => set((state) => {
+                const note = state.notes.find(n => n.id === noteId);
+                if (!note || note.isSettings) return state;
+                const exists = state.favorites.some(f => f.id === noteId);
+                if (exists) {
+                    return { favorites: state.favorites.filter(f => f.id !== noteId) };
                 }
-
+                return {
+                    favorites: [...state.favorites, {
+                        id: noteId,
+                        title: note.title,
+                        content: note.content,
+                        createdAt: Date.now(),
+                    }],
+                };
+            }),
+            deleteFavorite: (favId) => set((state) => ({
+                favorites: state.favorites.filter(f => f.id !== favId),
+            })),
+            openFavorite: (favId) => set((state) => {
+                const fav = state.favorites.find(f => f.id === favId);
+                if (!fav) return state;
+                const existing = state.notes.find(n => n.id === favId);
+                if (existing) {
+                    return { isNotePanelOpen: true, activeNoteId: favId };
+                }
+                const newNote: Note = {
+                    id: favId,
+                    title: fav.title,
+                    icon: 'star',
+                    emoji: null,
+                    content: fav.content,
+                };
                 return {
                     isNotePanelOpen: true,
-                    notes: nextNotes,
-                    activeNoteId: pluginsNote.id,
-                    nextNoteId: nextId,
+                    notes: [...state.notes, newNote],
+                    activeNoteId: favId,
+                    nextNoteId: Math.max(state.nextNoteId, favId + 1),
                 };
             }),
 
@@ -810,8 +805,23 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 21,
+            version: 22,
             migrate: (persistedState: any, version: number) => {
+                // version 22 migration: remove plugin system, add favorites
+                if (version <= 21) {
+                    if (persistedState.favorites === undefined) {
+                        persistedState.favorites = [];
+                    }
+                    if (Array.isArray(persistedState.notes)) {
+                        persistedState.notes = persistedState.notes.filter((n: any) => !n.isPlugins);
+                        if (persistedState.notes.length === 0) {
+                            persistedState.notes = defaultNotes;
+                        }
+                        if (!persistedState.notes.some((n: any) => n.id === persistedState.activeNoteId)) {
+                            persistedState.activeNoteId = persistedState.notes[0].id;
+                        }
+                    }
+                }
                 // version 21 migration for editor typography settings
                 if (version <= 20) {
                     if (persistedState.editorFontSize === undefined) {
@@ -837,9 +847,6 @@ export const useAppStore = create<AppState>()(
                     }
                     if (persistedState.isHighlightingSettingsBtn === undefined) {
                         persistedState.isHighlightingSettingsBtn = false;
-                    }
-                    if (persistedState.isHighlightingPluginsBtn === undefined) {
-                        persistedState.isHighlightingPluginsBtn = false;
                     }
                 }
                 // version 18 migration for orientation
@@ -990,6 +997,7 @@ export const useAppStore = create<AppState>()(
                 notes: state.notes,
                 activeNoteId: state.activeNoteId,
                 nextNoteId: state.nextNoteId,
+                favorites: state.favorites,
                 notePanelWidth: state.notePanelWidth,
                 notePanelHeight: state.notePanelHeight,
                 tutorialState: state.tutorialState,

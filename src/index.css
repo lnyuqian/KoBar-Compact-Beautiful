@@ -222,6 +222,12 @@
     color: #989898;
   }
 
+  /* Rounded icon style: softer, chubbier glyphs (used for + / settings / edit / close / star) */
+  .material-symbols-rounded {
+    user-select: none;
+    font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 48;
+  }
+
   ::-webkit-scrollbar {
     height: 8px;
     width: 8px;

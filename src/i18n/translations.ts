@@ -27,7 +27,11 @@ export function getLanguageOptions(activeLang: LanguageCode): { code: LanguageCo
 
 export const translations = {
     en: {
-        plugins: "Plugins",
+        favorites: "Favorites",
+        favoritesEmpty: "No favorites yet",
+        favorite: "Add to favorites",
+        unfavorite: "Remove from favorites",
+        deleteFavoriteConfirmMsg: "Remove this document from favorites?",
         updateAvailableTitle: "Update Available",
         updateAvailableMessage: "A new version of KoBar ({version}) is available. Would you like to download and install it?",
         updateYes: "Yes, Install",
@@ -292,11 +296,8 @@ export const translations = {
         tutorialStep2Message: "You can take quick notes here.",
         tutorialStep3Message: "You can access KoBar's settings using the button on the top right.",
         tutorialStep4Message: "You can personalize KoBar's appearance, shortcuts, and behaviors from the settings panel.",
-        tutorialStep5Message: "You can add new features to KoBar and expand your workspace from the plugins tab.",
-        tutorialStep6Message: "You can manage your installed plugins here. You have completed the tutorial!"
     },
     tr: {
-        plugins: "Eklentiler",
         updateAvailableTitle: "Güncelleme Mevcut",
         updateAvailableMessage: "KoBar'ın yeni bir sürümü ({version}) mevcut. İndirip kurmak ister misiniz?",
         updateYes: "Evet, Yükle",
@@ -556,8 +557,6 @@ export const translations = {
         tutorialStep2Message: "Burada hızlıca notlar alabilirsin",
         tutorialStep3Message: "KoBar'ın settings'ine sağ üstteki buton ile ulaşabilirsin",
         tutorialStep4Message: "Ayarlar panelinden KoBar'ın görünümünü, kısayollarını ve davranışlarını kişiselleştirebilirsin.",
-        tutorialStep5Message: "Pluginler sekmesinden KoBar'a yeni özellikler ekleyebilir ve çalışma alanını genişletebilirsin.",
-        tutorialStep6Message: "Burada yüklediğin eklentileri yönetebilirsin. Öğreticiyi tamamladın!"
     },
     de: {
         updateAvailableTitle: "Update verfügbar",
@@ -819,8 +818,6 @@ export const translations = {
         tutorialStep2Message: "Hier kannst du schnelle Notizen machen.",
         tutorialStep3Message: "Du kannst die Einstellungen von KoBar über die Schaltfläche oben rechts aufrufen.",
         tutorialStep4Message: "Im Einstellungsfeld kannst du das Erscheinungsbild, die Tastenkombinationen und das Verhalten von KoBar anpassen.",
-        tutorialStep5Message: "Auf der Registerkarte Plugins kannst du KoBar neue Funktionen hinzufügen und deinen Arbeitsbereich erweitern.",
-        tutorialStep6Message: "Hier kannst du deine installierten Plugins verwalten. Du hast das Tutorial abgeschlossen!"
     },
     fr: {
         updateAvailableTitle: "Mise à jour disponible",
@@ -1082,8 +1079,6 @@ export const translations = {
         tutorialStep2Message: "Vous pouvez prendre des notes rapides ici.",
         tutorialStep3Message: "Vous pouvez accéder aux paramètres de KoBar à l'aide du bouton en haut à droite.",
         tutorialStep4Message: "Vous pouvez personnaliser l'apparence, les raccourcis et le comportement de KoBar depuis le panneau des paramètres.",
-        tutorialStep5Message: "Vous pouvez ajouter de nouvelles fonctionnalités à KoBar et étendre votre espace de travail depuis l'onglet plugins.",
-        tutorialStep6Message: "Vous pouvez gérer vos plugins installés ici. Vous avez terminé le tutoriel !"
     },
     es: {
         updateAvailableTitle: "Actualización disponible",
@@ -1345,8 +1340,6 @@ export const translations = {
         tutorialStep2Message: "Puedes tomar notas rápidas aquí.",
         tutorialStep3Message: "Puedes acceder a la configuración de KoBar usando el botón en la parte superior derecha.",
         tutorialStep4Message: "Puedes personalizar la apariencia, los atajos y el comportamiento de KoBar desde el panel de configuración.",
-        tutorialStep5Message: "Puedes agregar nuevas funciones a KoBar y expandir tu espacio de trabajo desde la pestaña de plugins.",
-        tutorialStep6Message: "Puedes gestionar tus plugins instalados aquí. ¡Has completado el tutorial!"
     },
     ru: {
         updateAvailableTitle: "Доступно обновление",
@@ -1608,8 +1601,6 @@ export const translations = {
         tutorialStep2Message: "Здесь вы можете делать быстрые заметки.",
         tutorialStep3Message: "Вы можете получить доступ к настройкам KoBar с помощью кнопки в правом верхнем углу.",
         tutorialStep4Message: "Вы можете настроить внешний вид, сочетания клавиш и поведение KoBar в панели настроек.",
-        tutorialStep5Message: "Вы можете добавить новые функции в KoBar и расширить свое рабочее пространство на вкладке плагинов.",
-        tutorialStep6Message: "Здесь вы можете управлять установленными плагинами. Вы завершили обучение!"
     },
     ar: {
         updateAvailableTitle: "تحديث متاح",
@@ -1871,10 +1862,13 @@ export const translations = {
         tutorialStep2Message: "يمكنك تدوين ملاحظات سريعة هنا.",
         tutorialStep3Message: "يمكنك الوصول إلى إعدادات KoBar باستخدام الزر الموجود في أعلى اليمين.",
         tutorialStep4Message: "يمكنك تخصيص مظهر KoBar واختصاراته وسلوكياته من لوحة الإعدادات.",
-        tutorialStep5Message: "يمكنك إضافة ميزات جديدة إلى KoBar وتوسيع مساحة عملك من علامة تبويب الإضافات.",
-        tutorialStep6Message: "يمكنك إدارة إضافاتك المثبتة هنا. لقد أكملت البرنامج التعليمي!"
     },
     zh: {
+        favorites: "收藏",
+        favoritesEmpty: "暂无收藏",
+        favorite: "添加收藏",
+        unfavorite: "取消收藏",
+        deleteFavoriteConfirmMsg: "确定将该文档从收藏中移除？",
         updateAvailableTitle: "有可用更新",
         updateAvailableMessage: "KoBar 的新版本 ({version}) 已可用。您要下载并安装吗？",
         updateYes: "是，安装",
@@ -2121,13 +2115,11 @@ export const translations = {
         tutorialBtnYes: "是的！",
         tutorialBtnTerminate: "终止",
         tutorialBtnLater: "稍后",
-        tutorialStep1Message: "你需要点击“缺口”来访问笔记、设置和插件。",
+        tutorialStep1Message: "你需要点击“缺口”来访问笔记和设置。",
         tutorialBtnSkip: "跳过",
         tutorialStep2Message: "你可以从这里快速记笔记。",
         tutorialStep3Message: "你可以使用右上角的按钮访问KoBar的设置。",
         tutorialStep4Message: "你可以从设置面板个性化KoBar的外观、快捷键和行为。",
-        tutorialStep5Message: "你可以从插件选项卡向KoBar添加新功能并扩展你的工作区。",
-        tutorialStep6Message: "你可以从这里管理你安装的插件。你已完成教程！"
     },
     ja: {
         updateAvailableTitle: "利用可能なアップデート",
@@ -2389,8 +2381,6 @@ export const translations = {
         tutorialStep2Message: "ここで簡単なメモを取ることができます。",
         tutorialStep3Message: "右上のボタンを使用してKoBarの設定にアクセスできます。",
         tutorialStep4Message: "設定パネルからKoBarの外観、ショートカット、動作をパーソナライズできます。",
-        tutorialStep5Message: "プラグインタブからKoBarに新機能を追加し、ワークスペースを拡張できます。",
-        tutorialStep6Message: "ここでインストールされたプラグインを管理できます。チュートリアルを完了しました！"
     },
     hi: {
         updateAvailableTitle: "अपडेट उपलब्ध है",
@@ -2652,8 +2642,6 @@ export const translations = {
         tutorialStep2Message: "आप यहां त्वरित नोट्स ले सकते हैं।",
         tutorialStep3Message: "आप शीर्ष दाईं ओर स्थित बटन का उपयोग करके KoBar की सेटिंग्स तक पहुंच सकते हैं।",
         tutorialStep4Message: "आप सेटिंग्स पैनल से KoBar की उपस्थिति, शॉर्टकट और व्यवहार को वैयक्तिकृत कर सकते हैं।",
-        tutorialStep5Message: "आप प्लगइन्स टैब से KoBar में नई सुविधाएँ जोड़ सकते हैं और अपने कार्यक्षेत्र का विस्तार कर सकते हैं।",
-        tutorialStep6Message: "आप अपने इंस्टॉल किए गए प्लगइन्स को यहां प्रबंधित कर सकते हैं। आपने ट्यूटोरियल पूरा कर लिया है!"
     },
 } as const;
 
