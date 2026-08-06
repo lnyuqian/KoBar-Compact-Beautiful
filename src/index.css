@@ -222,12 +222,6 @@
     color: #989898;
   }
 
-  /* Rounded icon style: softer, chubbier glyphs (used for + / settings / edit / close / star) */
-  .material-symbols-rounded {
-    user-select: none;
-    font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 48;
-  }
-
   ::-webkit-scrollbar {
     height: 8px;
     width: 8px;
@@ -290,6 +284,23 @@
   .animate-pop-in {
     animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+}
+
+/* Rounded icon style: solid (FILL=1) rounded glyphs so the rounded style is
+   clearly visible even at tiny sizes (used for + / settings / edit / close / star).
+   Defined OUTSIDE @layer utilities — font-variation-settings must not be in a
+   cascade layer or Chromium won't apply the variable-font axes reliably. */
+.material-symbols-rounded {
+  user-select: none;
+  font-family: "Material Symbols Rounded" !important;
+  font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 20;
+}
+
+/* Hollow variant for states that need to look "empty" (e.g. un-favorited star) */
+.material-symbols-rounded-fill0 {
+  user-select: none;
+  font-family: "Material Symbols Rounded" !important;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 20;
 }
 
 html,

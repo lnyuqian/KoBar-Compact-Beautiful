@@ -210,17 +210,17 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`material-symbols-rounded text-[9px] cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} text-[6.3px] cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
                                     {isFavorite(note.id) ? 'star' : 'star_border'}
                                 </span>
                             )}
                             <span className="truncate min-w-0 flex-1">{note.isSettings ? t('settings') : note.title}</span>
-                            {/* Close: hidden until the tab is hovered, 0.8x smaller */}
+                            {/* Close: hidden until the tab is hovered, 0.7x smaller */}
                             <span
                                 onClick={(e) => handleDelete(e, note.id)}
-                                className="material-symbols-rounded text-[7.2px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
+                                className="material-symbols-rounded text-[5px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
                                 title={t('closeTab')}
                             >
                                 close
