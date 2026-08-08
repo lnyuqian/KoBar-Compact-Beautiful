@@ -33,7 +33,6 @@ const Sidebar: React.FC = () => {
     const sidebarWidth = useAppStore(state => state.sidebarWidth);
     const iconScale = useAppStore(state => state.iconScale);
     const toggleWidth = useAppStore(state => state.toggleWidth);
-    const glassOpacity = useAppStore(state => state.glassOpacity);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
     const isHighlightingToggleNotes = useAppStore(state => state.isHighlightingToggleNotes);
@@ -582,7 +581,7 @@ const Sidebar: React.FC = () => {
                     ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
                         ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)]') 
-                        : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl'}`}
+                        : 'bg-[#5A5A5A] rounded-3xl shadow-2xl'}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
                     maxWidth: orientation === 'horizontal' ? `${calculatedMaxWidth}px` : undefined,
@@ -590,9 +589,7 @@ const Sidebar: React.FC = () => {
                     borderRight: orientation === 'horizontal' ? '' : 'transparent',
                     borderTop: orientation === 'horizontal' ? 'transparent' : '',
                     borderBottom: orientation === 'horizontal' ? 'transparent' : '',
-                    backgroundColor: design === 'style2' 
-                        ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
-                        : 'var(--theme-bg-dark)'
+                    backgroundColor: '#5A5A5A'
                 }}
             >
                 {/* 1a. Top/Left Drag Region & Branding */}
