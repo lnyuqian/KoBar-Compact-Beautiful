@@ -211,7 +211,7 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[16px]' : 'text-[18.9px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[16px]' : 'text-[19px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
                                     {isFavorite(note.id) ? 'star' : 'star_border'}
@@ -221,7 +221,7 @@ const NotePanel: React.FC = () => {
                             {/* Close: hidden until the tab is hovered, 0.7x smaller */}
                             <span
                                 onClick={(e) => handleDelete(e, note.id)}
-                                className="material-symbols-rounded text-[3.5px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
+                                className="material-symbols-rounded text-[4px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
                                 title={t('closeTab')}
                             >
                                 close
@@ -239,14 +239,14 @@ const NotePanel: React.FC = () => {
                             className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
                             title={t('addNewNote')}
                         >
-                            <span className="material-symbols-rounded text-[14.4px]">add</span>
+                            <span className="material-symbols-rounded text-[14px]">add</span>
                         </button>
                         <button
                             onClick={() => setIsEditing(!isEditing)}
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
                             title={isEditing ? t('doneEditing') : t('editMode')}
                         >
-                            <span className="material-symbols-rounded text-[8.5px]">{isEditing ? 'edit' : 'auto_stories'}</span>
+                            <span className="material-symbols-rounded text-[8px]">{isEditing ? 'edit' : 'auto_stories'}</span>
                         </button>
                         <button
                             ref={favBtnRef}
@@ -254,7 +254,7 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-primary'}`}
                             title={t('favorites')}
                         >
-                            <span className="material-symbols-rounded text-[8.5px]">star</span>
+                            <span className="material-symbols-rounded text-[8px]">star</span>
                         </button>
                     </div>
                     <button
