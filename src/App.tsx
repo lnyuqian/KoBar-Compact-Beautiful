@@ -403,7 +403,7 @@ const App: React.FC = () => {
           {!isMiniMode && (
             <>
               {isLicensed && isNotePanelOpen && edgePosition === 'left' && (
-                <div className="absolute top-0 pointer-events-none" style={{ left: '100%', marginLeft: '32px', zIndex: 20 }}>
+                <div className="absolute top-0 pointer-events-none" style={{ left: '100%', zIndex: 20 }}>
                   <NotePanel />
                 </div>
               )}
