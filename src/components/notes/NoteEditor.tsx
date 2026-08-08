@@ -91,7 +91,8 @@ const NoteEditor: React.FC = React.memo(() => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isUpdatingFromStore = useRef(false);
     const cmViewRef = useRef<EditorView | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const isEditing = useAppStore((state) => state.isEditing);
+    const setIsEditing = useAppStore((state) => state.setIsEditing);
     const [, setTick] = useState(0);
 
     // Markdown ↔ HTML conversion helpers
@@ -220,7 +221,7 @@ const NoteEditor: React.FC = React.memo(() => {
         const note = useAppStore.getState().notes.find(n => n.id === activeNoteId);
         setIsEditing(true);
         void note;
-    }, [activeNoteId]);
+    }, [activeNoteId, setIsEditing]);
 
     const exitEditMode = useCallback(() => {
         // Flush latest MD → HTML into the store
@@ -229,7 +230,7 @@ const NoteEditor: React.FC = React.memo(() => {
             useAppStore.getState().updateNoteContent(note.id, mdToHtml(cmViewRef.current.state.doc.toString()));
         }
         setIsEditing(false);
-    }, [activeNoteId, mdToHtml]);
+    }, [activeNoteId, mdToHtml, setIsEditing]);
 
     // Markdown changes → debounced save as HTML
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -350,17 +351,6 @@ const NoteEditor: React.FC = React.memo(() => {
                 </div>
             )}
 
-            {/* Read Mode Floating Edit Button */}
-            {!isEditing && (
-                <button
-                    onClick={enterEditMode}
-                    className="absolute top-5 right-[7%] z-10 flex items-center justify-center w-7 h-7 rounded-lg text-[#989898] hover:text-slate-100 hover:bg-white/5 transition-all no-drag-region cursor-pointer"
-                    title="Edit"
-                >
-                    <span className="material-symbols-rounded text-[16px]">edit</span>
-                </button>
-            )}
-
             {/* Formatting Toolbar (Edit Mode Only) */}
             {isEditing && (
                 <div className="flex items-center gap-2.5 mb-4 pb-3 border-b text-[#a3a3a3] no-drag-region flex-wrap" style={{ borderColor: 'var(--theme-border)' }}>
@@ -443,16 +433,22 @@ const NoteEditor: React.FC = React.memo(() => {
                 </div>
             )}
 
-            {/* Editor Content: edit mode = CodeMirror Markdown, read mode = auto render */}
+            {/* Editor Content: edit mode = CodeMirror Markdown, read mode = auto render.
+                Double-click toggles: read → edit, edit → read */}
             {isEditing ? (
-                <MarkdownEditor
-                    key={`md-${activeNote.id}`}
-                    value={initialMd}
-                    fontSize={editorFontSize}
-                    lineHeight={editorLineHeight}
-                    onChange={handleMdChange}
-                    onReady={(view) => { cmViewRef.current = view; }}
-                />
+                <div
+                    className="flex-1 min-h-0 flex flex-col no-drag-region"
+                    onDoubleClick={exitEditMode}
+                >
+                    <MarkdownEditor
+                        key={`md-${activeNote.id}`}
+                        value={initialMd}
+                        fontSize={editorFontSize}
+                        lineHeight={editorLineHeight}
+                        onChange={handleMdChange}
+                        onReady={(view) => { cmViewRef.current = view; }}
+                    />
+                </div>
             ) : looksLikeMarkdown(activeNote.content) ? (
                 <div
                     className="md-render flex-1 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar"

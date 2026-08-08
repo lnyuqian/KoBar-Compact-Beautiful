@@ -24,6 +24,8 @@ const NotePanel: React.FC = () => {
     const design = useAppStore(state => state.design);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const isMac = useAppStore(state => state.isMac);
+    const isEditing = useAppStore(state => state.isEditing);
+    const setIsEditing = useAppStore(state => state.setIsEditing);
 
     const activeNote = notes.find(n => n.id === activeNoteId);
 
@@ -62,9 +64,8 @@ const NotePanel: React.FC = () => {
     const favMenuRef = useRef<HTMLDivElement>(null);
     const [favMenuPos, setFavMenuPos] = useState<{ x: number, y: number } | null>(null);
 
-    // Favorites whose document is NOT currently open as a tab
-    const openableFavorites = favorites.filter(f => !notes.some(n => n.id === f.id));
-
+    // All favorites are listed in the dropdown; openFavorite activates an
+    // already-open tab or reopens the document
     const isFavorite = useCallback((noteId: number) => favorites.some(f => f.id === noteId), [favorites]);
 
     // Close popups on outside click
@@ -229,14 +230,21 @@ const NotePanel: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Bottom Action Row: + , Favorites (star), Settings — right-aligned */}
-                <div className="flex items-center justify-end gap-0.5 w-[93%] pointer-events-auto">
+                {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star), Settings — left-aligned, + at far left */}
+                <div className="flex items-center justify-start gap-0.5 w-[93%] pointer-events-auto">
                     <button
                         onClick={() => addNote()}
                         className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
                         title={t('addNewNote')}
                     >
                         <span className="material-symbols-rounded text-[12px]">add</span>
+                    </button>
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
+                        title={isEditing ? t('doneEditing') : t('editMode')}
+                    >
+                        <span className="material-symbols-rounded text-[12px]">{isEditing ? 'edit' : 'auto_stories'}</span>
                     </button>
                     <button
                         ref={favBtnRef}
@@ -290,7 +298,8 @@ const NotePanel: React.FC = () => {
                     document.body
                 )}
 
-                {/* Favorites Dropdown: lists favorited documents NOT currently open as tabs */}
+                {/* Favorites Dropdown: lists ALL favorited documents; openFavorite
+                    activates an already-open tab or reopens the document */}
                 {isFavOpen && favMenuPos !== null && createPortal(
                     <div
                         ref={favMenuRef}
@@ -310,10 +319,10 @@ const NotePanel: React.FC = () => {
                             style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)' }}>
                             {t('favorites')}
                         </div>
-                        {openableFavorites.length === 0 ? (
+                        {favorites.length === 0 ? (
                             <div className="px-3 py-4 text-xs text-slate-500 text-center">{t('favoritesEmpty')}</div>
                         ) : (
-                            openableFavorites.map(f => (
+                            favorites.map(f => (
                                 <div
                                     key={f.id}
                                     onClick={() => { openFavorite(f.id); setIsFavOpen(false); }}

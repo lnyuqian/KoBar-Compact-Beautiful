@@ -181,6 +181,9 @@ interface AppState {
     toggleFavorite: (noteId: number) => void;
     deleteFavorite: (favId: number) => void;
     openFavorite: (favId: number) => void;
+    // Editor mode (not persisted): true = editing (CodeMirror), false = reading
+    isEditing: boolean;
+    setIsEditing: (editing: boolean) => void;
     // App Launcher
 
     // Theme
@@ -645,6 +648,8 @@ export const useAppStore = create<AppState>()(
             }),
             // Favorites: permanently saved documents that survive tab deletion
             favorites: [],
+            isEditing: false,
+            setIsEditing: (editing) => set({ isEditing: editing }),
             toggleFavorite: (noteId) => set((state) => {
                 const note = state.notes.find(n => n.id === noteId);
                 if (!note || note.isSettings) return state;
