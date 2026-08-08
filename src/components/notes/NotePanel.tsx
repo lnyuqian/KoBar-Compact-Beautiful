@@ -48,8 +48,23 @@ const NotePanel: React.FC = () => {
         const tmp = document.createElement('div');
         tmp.innerHTML = note.content;
         const text = tmp.textContent || '';
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(text).catch(() => { });
+        const copyViaTextarea = () => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (err) { console.error('Copy failed:', err); }
+            document.body.removeChild(ta);
+        };
+        // Prefer the main-process clipboard (reliable regardless of window focus);
+        // the web Clipboard API can silently fail when the window loses focus,
+        // leaving the previous clipboard content (e.g. an old screenshot) behind.
+        if (window.api?.writeToClipboard) {
+            window.api.writeToClipboard({ type: 'text', content: text });
+        } else if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(copyViaTextarea);
+        } else {
+            copyViaTextarea();
         }
         setCopied(true);
         setTimeout(() => setCopied(false), 1200);
