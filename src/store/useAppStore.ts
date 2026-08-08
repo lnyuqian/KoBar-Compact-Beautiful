@@ -492,9 +492,9 @@ export const useAppStore = create<AppState>()(
             setFeatureSpacing: (val) => set({ featureSpacing: val }),
 
             // Editor Typography
-            editorFontSize: 18, // px
+            editorFontSize: 14, // px
             setEditorFontSize: (val) => set({ editorFontSize: val }),
-            editorLineHeight: 1.75,
+            editorLineHeight: 1.4,
             setEditorLineHeight: (val) => set({ editorLineHeight: val }),
 
             // Launch at Startup
@@ -810,8 +810,13 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 22,
+            version: 23,
             migrate: (persistedState: any, version: number) => {
+                // version 23 migration: unified editor typography defaults (14px / 1.4)
+                if (version <= 22) {
+                    persistedState.editorFontSize = 14;
+                    persistedState.editorLineHeight = 1.4;
+                }
                 // version 22 migration: remove plugin system, add favorites
                 if (version <= 21) {
                     if (persistedState.favorites === undefined) {
@@ -830,10 +835,10 @@ export const useAppStore = create<AppState>()(
                 // version 21 migration for editor typography settings
                 if (version <= 20) {
                     if (persistedState.editorFontSize === undefined) {
-                        persistedState.editorFontSize = 18;
+                        persistedState.editorFontSize = 14;
                     }
                     if (persistedState.editorLineHeight === undefined) {
-                        persistedState.editorLineHeight = 1.75;
+                        persistedState.editorLineHeight = 1.4;
                     }
                 }
                 // version 20 migration for tutorial state

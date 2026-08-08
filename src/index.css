@@ -404,17 +404,17 @@ hr {
 .tiptap ul {
   list-style-type: disc;
   padding-left: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .tiptap ol {
   list-style-type: decimal;
   padding-left: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .tiptap li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .tiptap ul>li::marker {
@@ -483,12 +483,12 @@ hr {
 .md-render ul,
 .md-render ol {
   padding-left: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .md-render ul { list-style-type: disc; }
 .md-render ol { list-style-type: decimal; }
-.md-render li { margin-bottom: 0.5rem; }
+.md-render li { margin-bottom: 0.25rem; }
 .md-render li::marker { color: var(--theme-marker); }
 
 .md-render blockquote {

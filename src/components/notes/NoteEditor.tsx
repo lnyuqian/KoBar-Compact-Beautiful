@@ -13,7 +13,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { EditorView } from '@codemirror/view';
 import { useAppStore } from '../../store/useAppStore';
-import { useSpeechToText } from '../../hooks/useSpeechToText';
 import MarkdownEditor from './MarkdownEditor';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
@@ -82,7 +81,7 @@ const ParagraphWithCopy = Node.create({
 const COLOR_PRESETS = ['#ffffff', '#e5e5e5', '#a3a3a3', '#737373', '#f43f5e', '#f59e0b', '#facc15', '#4ade80', '#22d3ee', '#3b82f6', '#a78bfa', '#f472b6'];
 
 const NoteEditor: React.FC = React.memo(() => {
-    const { activeNoteId, updateNoteTitle, t, design, language } = useAppStore();
+    const { activeNoteId, updateNoteTitle, t, design } = useAppStore();
     const activeNote = useAppStore((state) => state.notes.find(n => n.id === activeNoteId));
     const editorFontSize = useAppStore((state) => state.editorFontSize);
     const setEditorFontSize = useAppStore((state) => state.setEditorFontSize);
@@ -129,7 +128,7 @@ const NoteEditor: React.FC = React.memo(() => {
         content: activeNote?.content || '',
         editorProps: {
             attributes: {
-                class: 'flex-1 text-slate-300 text-lg leading-relaxed outline-none no-drag-region overflow-y-auto max-w-none',
+                class: 'flex-1 text-slate-300 text-sm leading-[1.4] outline-none no-drag-region overflow-y-auto max-w-none',
                 spellcheck: 'false',
             },
         },
@@ -147,26 +146,6 @@ const NoteEditor: React.FC = React.memo(() => {
             setTick((prev) => prev + 1);
         },
     }, []);
-
-    const handleTranscript = useCallback((text: string) => {
-        if (isEditing && cmViewRef.current) {
-            const view = cmViewRef.current;
-            view.dispatch(view.state.replaceSelection(text + ' '));
-        } else if (editor) {
-            editor.chain().focus().insertContent(text + ' ').run();
-        }
-    }, [isEditing, editor]);
-
-    const { isListening, toggleListening, isSupported, error } = useSpeechToText({
-        onTranscript: handleTranscript,
-        language,
-    });
-
-    useEffect(() => {
-        if (error) {
-            console.error('Speech-to-Text Error:', error);
-        }
-    }, [error]);
 
     // Sync TipTap content when active tab changes OR when toggling back from
     // edit mode (so MD edits incl. colors are reflected in read mode)
@@ -326,7 +305,7 @@ const NoteEditor: React.FC = React.memo(() => {
 
     return (
         <div
-            className={`relative flex-1 p-5 flex flex-col overflow-y-auto overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
+            className={`relative flex-1 p-5 flex flex-col overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
         >
             {/* Hidden file input for image selection */}
             <input
@@ -354,30 +333,14 @@ const NoteEditor: React.FC = React.memo(() => {
             {/* Formatting Toolbar (Edit Mode Only) */}
             {isEditing && (
                 <div className="flex items-center gap-2.5 mb-4 pb-3 border-b text-[#a3a3a3] no-drag-region flex-wrap" style={{ borderColor: 'var(--theme-border)' }}>
-                    {/* Voice input + Image (mic left, image right, tight gap) */}
-                    <div className="flex items-center gap-2">
-                        {isSupported && (
-                            <button
-                                onClick={toggleListening}
-                                className={`hover:text-slate-200 transition-colors cursor-pointer flex items-center gap-1.5 
-                                    ${isListening ? 'text-orange-500 animate-pulse' : ''} 
-                                    ${error ? 'text-red-500' : ''}`}
-                                title={error ? `${t('voiceToText')}: ${error}` : (isListening ? t('listening') : t('voiceToText'))}
-                            >
-                                <span className="material-symbols-outlined text-[18px] text-[#a3a3a3]">
-                                    {error ? 'mic_off' : 'mic'}
-                                </span>
-                                {isListening && <span className="text-[10px] font-bold uppercase tracking-wider">{t('listening')}</span>}
-                            </button>
-                        )}
-                        <button
-                            onClick={triggerImagePicker}
-                            className="hover:text-slate-200 transition-colors cursor-pointer mt-[2px]"
-                            title="Insert Image"
-                        >
-                            <span className="material-symbols-outlined text-[18px] text-[#a3a3a3]">image</span>
-                        </button>
-                    </div>
+                    {/* Image insert */}
+                    <button
+                        onClick={triggerImagePicker}
+                        className="hover:text-slate-200 transition-colors cursor-pointer mt-[2px]"
+                        title="Insert Image"
+                    >
+                        <span className="material-symbols-outlined text-[18px] text-[#a3a3a3]">image</span>
+                    </button>
 
                     <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
 
@@ -437,7 +400,7 @@ const NoteEditor: React.FC = React.memo(() => {
                 Double-click toggles: read → edit, edit → read */}
             {isEditing ? (
                 <div
-                    className="flex-1 min-h-0 flex flex-col no-drag-region"
+                    className="flex-1 min-h-0 flex flex-col no-drag-region -mx-5 px-5"
                     onDoubleClick={exitEditMode}
                 >
                     <MarkdownEditor
@@ -451,14 +414,14 @@ const NoteEditor: React.FC = React.memo(() => {
                 </div>
             ) : looksLikeMarkdown(activeNote.content) ? (
                 <div
-                    className="md-render flex-1 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar"
+                    className="md-render flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar -mx-5 px-5"
                     style={{ fontSize: `${editorFontSize}px`, lineHeight: String(editorLineHeight) }}
                     onDoubleClick={enterEditMode}
                 >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeNote.content}</ReactMarkdown>
                 </div>
             ) : (
-                <EditorContent editor={editor} className="flex-1 overflow-y-auto overflow-x-hidden no-drag-region" onDoubleClick={enterEditMode} />
+                <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region -mx-5 px-5" onDoubleClick={enterEditMode} />
             )}
         </div>
     );
