@@ -34,6 +34,12 @@ const NotePanel: React.FC = () => {
     const setIsEditing = useAppStore(state => state.setIsEditing);
     const edgePosition = useAppStore(state => state.edgePosition);
 
+    // Keep the tabs header and the content area aligned when the panel is
+    // docked to either side. The screen-edge side gets the larger inset;
+    // top/bottom docking keeps the same small inset on both sides.
+    const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
+    const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
+
     const activeNote = notes.find(n => n.id === activeNoteId);
 
     // Direct DOM access for zero-latency resizing
@@ -195,18 +201,19 @@ const NotePanel: React.FC = () => {
                 className="flex flex-col pt-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
                 style={{
                     backgroundColor: '#424242',
-                    paddingLeft: `${edgePosition === 'left' ? 5 : 2}%`,
-                    paddingRight: `${edgePosition === 'right' ? 5 : 2}%`,
+                    paddingLeft: `${panelPaddingLeft}%`,
+                    paddingRight: `${panelPaddingRight}%`,
                 }}
             >
-                {/* Tab grid: 2 per row, 93% width, 7% right gap */}
+                {/* Tab grid: fill the shared inset area so left/right docking
+                    uses the same horizontal start and end as the content. */}
                 <div
                     ref={tabsRef}
                     onMouseDown={handleTabsMouseDown}
                     onMouseLeave={handleTabsMouseLeave}
                     onMouseUp={handleTabsMouseUp}
                     onMouseMove={handleTabsMouseMove}
-                    className={`grid grid-cols-2 gap-1 w-[93%] max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid grid-cols-2 gap-1 w-full max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
                 >
                     {notes.map((note) => (
                         <div
@@ -249,7 +256,7 @@ const NotePanel: React.FC = () => {
 
                 {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star) — left group;
                     Settings — right-aligned on the same row. All icons use the favorited-star size (14px). */}
-                <div className="flex items-center justify-between w-[93%] pointer-events-auto">
+                <div className="flex items-center justify-between w-full pointer-events-auto">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => addNote()}
@@ -404,7 +411,11 @@ const NotePanel: React.FC = () => {
             {/* Editor or Settings Area */}
             <div
                 className="flex-1 flex flex-col overflow-hidden"
-                style={{ backgroundColor: '#2E2E2E' }}
+                style={{
+                    backgroundColor: '#2E2E2E',
+                    paddingLeft: `${panelPaddingLeft}%`,
+                    paddingRight: `${panelPaddingRight}%`,
+                }}
             >
                 {activeNote?.isSettings ? (
                     <SettingsPanel />
