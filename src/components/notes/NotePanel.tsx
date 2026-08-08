@@ -4,6 +4,12 @@ import { useAppStore } from '../../store/useAppStore';
 import NoteEditor from './NoteEditor';
 import SettingsPanel from './SettingsPanel';
 import ResizerHandle from './ResizerHandle';
+import addIcon from '../../assets/icons/add.svg';
+import favoritedIcon from '../../assets/icons/favorited.svg';
+import unfavoritedIcon from '../../assets/icons/unfavorited.svg';
+import editIcon from '../../assets/icons/edit.svg';
+import readIcon from '../../assets/icons/read.svg';
+import settingsIcon from '../../assets/icons/settings.svg';
 
 const NotePanel: React.FC = () => {
     const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
@@ -211,10 +217,16 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[14px]' : 'text-[19px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className="cursor-pointer shrink-0 flex items-center"
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
-                                    {isFavorite(note.id) ? 'star' : 'star_border'}
+                                    <img
+                                        src={isFavorite(note.id) ? favoritedIcon : unfavoritedIcon}
+                                        alt=""
+                                        width={19}
+                                        height={19}
+                                        className="block"
+                                    />
                                 </span>
                             )}
                             <span className="truncate min-w-0 flex-1">{note.isSettings ? t('settings') : note.title}</span>
@@ -231,7 +243,7 @@ const NotePanel: React.FC = () => {
                 </div>
 
                 {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star) — left group;
-                    Settings — right-aligned on the same row */}
+                    Settings — right-aligned on the same row. All icons use the favorited-star size (14px). */}
                 <div className="flex items-center justify-between w-[93%] pointer-events-auto">
                     <div className="flex items-center gap-0.5">
                         <button
@@ -239,22 +251,22 @@ const NotePanel: React.FC = () => {
                             className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
                             title={t('addNewNote')}
                         >
-                            <span className="material-symbols-rounded text-[16px]">add</span>
+                            <img src={addIcon} alt="" width={14} height={14} className="block" />
                         </button>
                         <button
                             onClick={() => setIsEditing(!isEditing)}
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
                             title={isEditing ? t('doneEditing') : t('editMode')}
                         >
-                            <span className="material-symbols-rounded text-[6px]">{isEditing ? 'edit' : 'auto_stories'}</span>
+                            <img src={isEditing ? editIcon : readIcon} alt="" width={14} height={14} className="block" />
                         </button>
                         <button
                             ref={favBtnRef}
                             onClick={toggleFavMenu}
-                            className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-primary'}`}
+                            className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? '' : 'text-[#989898] hover:text-primary'}`}
                             title={t('favorites')}
                         >
-                            <span className="material-symbols-rounded text-[8px]">star</span>
+                            <img src={favoritedIcon} alt="" width={14} height={14} className="block" />
                         </button>
                     </div>
                     <button
@@ -262,7 +274,7 @@ const NotePanel: React.FC = () => {
                         className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={t('settings')}
                     >
-                        <span className="material-symbols-rounded text-[12px]">settings</span>
+                        <img src={settingsIcon} alt="" width={14} height={14} className="block" />
                     </button>
                 </div>
 
@@ -332,7 +344,7 @@ const NotePanel: React.FC = () => {
                                     className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-white/5 group/fav"
                                     title={f.title}
                                 >
-                                    <span className="material-symbols-rounded text-[10px] text-[#FFD54F] shrink-0">star</span>
+                                    <img src={favoritedIcon} alt="" width={14} height={14} className="shrink-0 block" />
                                     <span className="truncate min-w-0 flex-1 text-xs text-slate-300">{f.title || t('addNewNote')}</span>
                                     <span
                                         onClick={(e) => { e.stopPropagation(); setFavDeleteConfirm({ id: f.id, x: e.clientX, y: e.clientY }); }}

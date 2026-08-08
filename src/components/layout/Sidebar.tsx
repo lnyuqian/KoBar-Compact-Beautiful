@@ -8,6 +8,7 @@ import TooltipButton from './TooltipButton';
 import { CartoonEye } from './MaskIcon';
 import EyeNotification from './EyeNotification';
 import { useExtensionRegistry } from '../extensions/extensionRegistry';
+import dragIcon from '../../assets/icons/drag.svg';
 
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
@@ -599,7 +600,12 @@ const Sidebar: React.FC = () => {
                     className={`${orientation === 'horizontal' ? 'w-6 h-full -mr-2' : 'h-6 w-full -mb-2'} shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing`}
                     onMouseDown={handleSidebarDragStart}
                 >
-                    <span className="material-symbols-outlined text-[16px] text-[#989898] pointer-events-none" style={{ zoom: iconScale }}>drag_indicator</span>
+                    <img
+                        src={dragIcon}
+                        alt=""
+                        className="pointer-events-none"
+                        style={{ width: 16 * iconScale, height: 16 * iconScale }}
+                    />
                 </div>
 
                 <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />

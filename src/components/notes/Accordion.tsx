@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import backIcon from '../../assets/icons/back.svg';
 
 const Accordion: React.FC<{
     title: string;
@@ -39,9 +40,13 @@ const Accordion: React.FC<{
                         </button>
                     )}
                     <button onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-                        <span className={`material-symbols-outlined text-slate-400 text-[20px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                            expand_more
-                        </span>
+                        <img
+                            src={backIcon}
+                            alt=""
+                            width={20}
+                            height={20}
+                            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        />
                     </button>
                 </div>
             </div>
