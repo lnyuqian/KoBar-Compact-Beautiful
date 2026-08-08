@@ -311,7 +311,7 @@ const NoteEditor: React.FC = React.memo(() => {
 
     return (
         <div
-            className={`relative flex-1 pt-5 pb-5 flex flex-col overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
+            className={`relative flex-1 pt-2.5 pb-2.5 flex flex-col overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
         >
             {/* Hidden file input for image selection */}
             <input
