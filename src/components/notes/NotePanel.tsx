@@ -258,7 +258,7 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
                             title={isEditing ? t('doneEditing') : t('editMode')}
                         >
-                            <img src={isEditing ? editIcon : readIcon} alt="" width={14} height={14} className="block" />
+                            <img src={isEditing ? editIcon : readIcon} alt="" width={16} height={16} className="block" />
                         </button>
                         <button
                             ref={favBtnRef}
@@ -266,7 +266,7 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? '' : 'text-[#989898] hover:text-primary'}`}
                             title={t('favorites')}
                         >
-                            <img src={favoritedIcon} alt="" width={14} height={14} className="block" />
+                            <img src={favoritedIcon} alt="" width={16} height={16} className="block" />
                         </button>
                     </div>
                     <button
@@ -274,7 +274,7 @@ const NotePanel: React.FC = () => {
                         className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={t('settings')}
                     >
-                        <img src={settingsIcon} alt="" width={14} height={14} className="block" />
+                        <img src={settingsIcon} alt="" width={16} height={16} className="block" />
                     </button>
                 </div>
 
@@ -344,7 +344,7 @@ const NotePanel: React.FC = () => {
                                     className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-white/5 group/fav"
                                     title={f.title}
                                 >
-                                    <img src={favoritedIcon} alt="" width={14} height={14} className="shrink-0 block" />
+                                    <img src={favoritedIcon} alt="" width={16} height={16} className="shrink-0 block" />
                                     <span className="truncate min-w-0 flex-1 text-xs text-slate-300">{f.title || t('addNewNote')}</span>
                                     <span
                                         onClick={(e) => { e.stopPropagation(); setFavDeleteConfirm({ id: f.id, x: e.clientX, y: e.clientY }); }}
