@@ -469,6 +469,13 @@ hr {
   margin-bottom: 0;
 }
 
+/* CodeMirror (Markdown edit mode) defaults to 4px vertical padding on
+   .cm-content — remove it so the content bottom sits flush too */
+.cm-content {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .md-render h1,
 .md-render h2,
 .md-render h3,
