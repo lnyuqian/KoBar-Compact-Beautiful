@@ -302,7 +302,7 @@ const NotePanel: React.FC = () => {
                         >
                             <span
                                 className="material-symbols-rounded"
-                                style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 14", color: copied ? '#4ade80' : '#989898' }}
+                                style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 18", color: copied ? '#4ade80' : '#989898' }}
                             >content_copy</span>
                         </button>
                     </div>
