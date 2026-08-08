@@ -283,10 +283,12 @@ function handleWindowMove(force = false) {
     if (!mainWindow) return;
     const [x, y] = mainWindow.getPosition();
     const [width] = mainWindow.getSize();
-    const windowCenter = x + (width / 2);
-    const activeDisplay = screen.getDisplayNearestPoint({ x: windowCenter, y: 100 });
+    // Judge the edge by the sidebar panel's REAL screen position (ghost window offset),
+    // not the 6000px-wide ghost window center (which is always ~3000 → always 'right').
+    const sidebarScreenCenter = x + sidebarRect.offsetX + (sidebarRect.width / 2);
+    const activeDisplay = screen.getDisplayNearestPoint({ x: sidebarScreenCenter, y: 100 });
     const bounds = activeDisplay.workArea;
-    const newEdge = windowCenter > (bounds.x + bounds.width / 2) ? 'right' : 'left';
+    const newEdge = sidebarScreenCenter > (bounds.x + bounds.width / 2) ? 'right' : 'left';
 
     if (force || newEdge !== currentEdge) {
         currentEdge = newEdge;
