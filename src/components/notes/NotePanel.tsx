@@ -32,6 +32,7 @@ const NotePanel: React.FC = () => {
     const isMac = useAppStore(state => state.isMac);
     const isEditing = useAppStore(state => state.isEditing);
     const setIsEditing = useAppStore(state => state.setIsEditing);
+    const edgePosition = useAppStore(state => state.edgePosition);
 
     const activeNote = notes.find(n => n.id === activeNoteId);
 
@@ -192,7 +193,11 @@ const NotePanel: React.FC = () => {
             {/* Tabs Header */}
             <div
                 className="flex flex-col pt-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
-                style={{ backgroundColor: '#424242' }}
+                style={{
+                    backgroundColor: '#424242',
+                    paddingLeft: `${edgePosition === 'left' ? 8 : 2}%`,
+                    paddingRight: `${edgePosition === 'right' ? 8 : 2}%`,
+                }}
             >
                 {/* Tab grid: 2 per row, 93% width, 7% right gap */}
                 <div
@@ -201,7 +206,7 @@ const NotePanel: React.FC = () => {
                     onMouseLeave={handleTabsMouseLeave}
                     onMouseUp={handleTabsMouseUp}
                     onMouseMove={handleTabsMouseMove}
-                    className={`grid grid-cols-2 gap-1 w-[84%] mx-auto max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid grid-cols-2 gap-1 w-[93%] max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
                 >
                     {notes.map((note) => (
                         <div
@@ -209,8 +214,8 @@ const NotePanel: React.FC = () => {
                             role="button"
                             onClick={() => handleTabClick(note.id)}
                             className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region ${note.id === activeNoteId
-                                ? 'text-slate-200 border-l-2 border-[#828282] bg-[#2E2E2E]'
-                                : 'text-white cursor-pointer border-l-2 border-transparent bg-[#383838]'
+                                ? 'text-slate-200 bg-[#2E2E2E]'
+                                : 'text-white cursor-pointer bg-[#383838]'
                                 }`}
                         >
                             {/* Favorite star (left side of each tab) */}
@@ -244,7 +249,7 @@ const NotePanel: React.FC = () => {
 
                 {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star) — left group;
                     Settings — right-aligned on the same row. All icons use the favorited-star size (14px). */}
-                <div className="flex items-center justify-between w-[84%] mx-auto pointer-events-auto">
+                <div className="flex items-center justify-between w-[93%] pointer-events-auto">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => addNote()}
