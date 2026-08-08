@@ -604,7 +604,7 @@ const Sidebar: React.FC = () => {
                         src={dragIcon}
                         alt=""
                         className="pointer-events-none"
-                        style={{ width: 16 * iconScale, height: 16 * iconScale }}
+                        style={{ width: 20 * iconScale, height: 20 * iconScale }}
                     />
                 </div>
 

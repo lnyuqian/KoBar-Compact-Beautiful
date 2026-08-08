@@ -208,8 +208,8 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#535353] ${note.id === activeNoteId
-                                ? 'text-slate-200 border-l-2 border-[var(--theme-primary)]'
+                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#5A5A5A] ${note.id === activeNoteId
+                                ? 'text-slate-200 border-l-2 border-[#828282]'
                                 : 'text-white cursor-pointer border-l-2 border-transparent'
                                 }`}
                         >
@@ -223,8 +223,8 @@ const NotePanel: React.FC = () => {
                                     <img
                                         src={isFavorite(note.id) ? favoritedIcon : unfavoritedIcon}
                                         alt=""
-                                        width={19}
-                                        height={19}
+                                        width={14}
+                                        height={14}
                                         className="block"
                                     />
                                 </span>
@@ -233,7 +233,7 @@ const NotePanel: React.FC = () => {
                             {/* Close: hidden until the tab is hovered, 0.7x smaller */}
                             <span
                                 onClick={(e) => handleDelete(e, note.id)}
-                                className="material-symbols-rounded text-[4px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 hover:bg-slate-800 rounded-sm p-0.5 transition-opacity cursor-pointer shrink-0"
+                                className="material-symbols-rounded text-[4px] text-[#989898] opacity-0 group-hover:opacity-100 hover:text-slate-200 rounded-sm p-0.5 transition-all hover:scale-125 cursor-pointer shrink-0"
                                 title={t('closeTab')}
                             >
                                 close
@@ -245,7 +245,7 @@ const NotePanel: React.FC = () => {
                 {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star) — left group;
                     Settings — right-aligned on the same row. All icons use the favorited-star size (14px). */}
                 <div className="flex items-center justify-between w-[93%] pointer-events-auto">
-                    <div className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-1">
                         <button
                             onClick={() => addNote()}
                             className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
@@ -258,7 +258,7 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
                             title={isEditing ? t('doneEditing') : t('editMode')}
                         >
-                            <img src={isEditing ? editIcon : readIcon} alt="" width={16} height={16} className="block" />
+                            <img src={isEditing ? editIcon : readIcon} alt="" width={18} height={18} className="block" />
                         </button>
                         <button
                             ref={favBtnRef}
@@ -266,7 +266,7 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? '' : 'text-[#989898] hover:text-primary'}`}
                             title={t('favorites')}
                         >
-                            <img src={favoritedIcon} alt="" width={16} height={16} className="block" />
+                            <img src={favoritedIcon} alt="" width={18} height={18} className="block" />
                         </button>
                     </div>
                     <button
@@ -274,7 +274,7 @@ const NotePanel: React.FC = () => {
                         className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={t('settings')}
                     >
-                        <img src={settingsIcon} alt="" width={16} height={16} className="block" />
+                        <img src={settingsIcon} alt="" width={18} height={18} className="block" />
                     </button>
                 </div>
 
@@ -399,7 +399,7 @@ const NotePanel: React.FC = () => {
             {/* Editor or Settings Area */}
             <div
                 className="flex-1 flex flex-col overflow-hidden"
-                style={{ backgroundColor: '#535353' }}
+                style={{ backgroundColor: '#5A5A5A' }}
             >
                 {activeNote?.isSettings ? (
                     <SettingsPanel />
