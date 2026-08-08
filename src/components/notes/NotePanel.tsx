@@ -208,7 +208,7 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#5A5A5A] ${note.id === activeNoteId
+                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#323232] ${note.id === activeNoteId
                                 ? 'text-slate-200 border-l-2 border-[#828282]'
                                 : 'text-white cursor-pointer border-l-2 border-transparent'
                                 }`}
@@ -399,7 +399,7 @@ const NotePanel: React.FC = () => {
             {/* Editor or Settings Area */}
             <div
                 className="flex-1 flex flex-col overflow-hidden"
-                style={{ backgroundColor: '#5A5A5A' }}
+                style={{ backgroundColor: '#323232' }}
             >
                 {activeNote?.isSettings ? (
                     <SettingsPanel />

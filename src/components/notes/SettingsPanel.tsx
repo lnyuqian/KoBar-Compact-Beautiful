@@ -745,7 +745,7 @@ const SettingsPanel: React.FC = () => {
                                         key={themeItem.id}
                                         onClick={() => setTheme(themeItem.id as any)}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all no-drag-region ${theme === themeItem.id
-                                            ? 'ring-2 ring-offset-2 ring-offset-[#5A5A5A] scale-110 shadow-lg'
+                                            ? 'ring-2 ring-offset-2 ring-offset-[#323232] scale-110 shadow-lg'
                                             : 'hover:scale-105 opacity-80 hover:opacity-100'
                                             }`}
                                         style={{
