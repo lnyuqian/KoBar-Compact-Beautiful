@@ -330,6 +330,9 @@ body {
   /* neutral gray-300 */
   font-size: 1.125rem;
   line-height: 1.75;
+  /* Reserve 2 list rows at the bottom so the scrollbar only appears once the
+     content exceeds the viewport by that margin */
+  padding-bottom: 48px;
 }
 
 .tiptap p {
@@ -458,6 +461,12 @@ hr {
   max-width: none;
 }
 
+/* Reserve ~2 list rows of bottom space: the vertical scrollbar only appears
+   once the content exceeds the viewport by that margin */
+.md-render > :last-child {
+  margin-bottom: 48px;
+}
+
 .md-render > * {
   margin-top: 0;
 }
@@ -563,6 +572,11 @@ hr {
 
 .md-render input[type="checkbox"] {
   margin-right: 0.4em;
+}
+
+/* CodeMirror: same bottom reserve so the scrollbar appears late in edit mode */
+.cm-editor .cm-content {
+  padding-bottom: 48px;
 }
 
 .md-render strong { color: #e5e5e5; }
