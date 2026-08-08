@@ -242,7 +242,7 @@ const App: React.FC = () => {
       }).catch(err => console.error('Failed to get screen bounds:', err));
     }
     if (window.api?.onEdgeChanged) {
-      window.api.onEdgeChanged((edge, bounds) => {
+      window.api.onEdgeChanged((_edge, bounds) => {
         // Note: we intentionally do NOT overwrite edgePosition here.
         // The renderer's Sidebar drag logic owns edgePosition (based on the sidebar's
         // real screen position); the main-process edge event is only used to refresh bounds.
