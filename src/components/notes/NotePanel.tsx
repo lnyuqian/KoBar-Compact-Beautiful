@@ -211,7 +211,7 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} text-[18.9px] cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[16px]' : 'text-[18.9px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
                                     {isFavorite(note.id) ? 'star' : 'star_border'}
@@ -230,30 +230,33 @@ const NotePanel: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star), Settings — left-aligned, + at far left */}
-                <div className="flex items-center justify-start gap-0.5 w-[93%] pointer-events-auto">
-                    <button
-                        onClick={() => addNote()}
-                        className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
-                        title={t('addNewNote')}
-                    >
-                        <span className="material-symbols-rounded text-[12px]">add</span>
-                    </button>
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
-                        title={isEditing ? t('doneEditing') : t('editMode')}
-                    >
-                        <span className="material-symbols-rounded text-[12px]">{isEditing ? 'edit' : 'auto_stories'}</span>
-                    </button>
-                    <button
-                        ref={favBtnRef}
-                        onClick={toggleFavMenu}
-                        className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-primary'}`}
-                        title={t('favorites')}
-                    >
-                        <span className="material-symbols-rounded text-[12px]">star</span>
-                    </button>
+                {/* Bottom Action Row: + , Edit/Read toggle, Favorites (star) — left group;
+                    Settings — right-aligned on the same row */}
+                <div className="flex items-center justify-between w-[93%] pointer-events-auto">
+                    <div className="flex items-center gap-0.5">
+                        <button
+                            onClick={() => addNote()}
+                            className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
+                            title={t('addNewNote')}
+                        >
+                            <span className="material-symbols-rounded text-[14.4px]">add</span>
+                        </button>
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
+                            title={isEditing ? t('doneEditing') : t('editMode')}
+                        >
+                            <span className="material-symbols-rounded text-[8.5px]">{isEditing ? 'edit' : 'auto_stories'}</span>
+                        </button>
+                        <button
+                            ref={favBtnRef}
+                            onClick={toggleFavMenu}
+                            className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isFavOpen ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-primary'}`}
+                            title={t('favorites')}
+                        >
+                            <span className="material-symbols-rounded text-[8.5px]">star</span>
+                        </button>
+                    </div>
                     <button
                         onClick={openSettingsTab}
                         className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
