@@ -581,7 +581,7 @@ const Sidebar: React.FC = () => {
                     ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
                         ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)]') 
-                        : 'bg-[#5A5A5A] rounded-3xl shadow-2xl'}`}
+                        : 'bg-[#323232] rounded-3xl shadow-2xl'}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
                     maxWidth: orientation === 'horizontal' ? `${calculatedMaxWidth}px` : undefined,
@@ -589,7 +589,7 @@ const Sidebar: React.FC = () => {
                     borderRight: orientation === 'horizontal' ? '' : 'transparent',
                     borderTop: orientation === 'horizontal' ? 'transparent' : '',
                     borderBottom: orientation === 'horizontal' ? 'transparent' : '',
-                    backgroundColor: '#5A5A5A'
+                    backgroundColor: '#323232'
                 }}
             >
                 {/* 1a. Top/Left Drag Region & Branding */}
