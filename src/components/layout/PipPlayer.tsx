@@ -155,7 +155,7 @@ const PipPlayer: React.FC = () => {
                 position: 'relative',
                 overflow: 'hidden',
                 background: '#000',
-                fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+                fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
             }}
         >
             {/* Edge hit-boxes to reliably trigger hover since the cross-origin iframe swallows document-level mouse events */}

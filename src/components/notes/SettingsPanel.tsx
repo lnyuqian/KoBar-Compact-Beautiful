@@ -72,8 +72,6 @@ const SettingsPanel: React.FC = () => {
 
     const setLanguage = useAppStore(state => state.setLanguage);
     const t = useAppStore(state => state.t);
-    const showTooltips = useAppStore(state => state.showTooltips);
-    const setShowTooltips = useAppStore(state => state.setShowTooltips);
     const launchAtStartup = useAppStore(state => state.launchAtStartup);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
@@ -360,7 +358,6 @@ const SettingsPanel: React.FC = () => {
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
                 language: state.language,
-                showTooltips: state.showTooltips,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
                 teleportShortcut: state.teleportShortcut,
@@ -833,23 +830,6 @@ const SettingsPanel: React.FC = () => {
                             >
                                 <span
                                     className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${launchAtStartup ? 'translate-x-5' : 'translate-x-0'}`}
-                                />
-                            </button>
-                        </div>
-
-                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-slate-400 text-[20px]">info</span>
-                                <span className="text-sm text-slate-300">{showTooltips ? t('hideTooltips') : t('showTooltips')}</span>
-                            </div>
-                            <button
-                                onClick={() => setShowTooltips(!showTooltips)}
-                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region ${showTooltips ? 'bg-primary' : 'bg-slate-600'}`}
-                            >
-                                <span
-                                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${showTooltips ? 'translate-x-5' : 'translate-x-0'}`}
                                 />
                             </button>
                         </div>

@@ -721,7 +721,7 @@ const Sidebar: React.FC = () => {
                     ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
                     ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-slate-400 hover:text-primary hover:bg-white/5'}`}
                 style={{ 
-                    backgroundColor: '#282828', 
+                    backgroundColor: '#323232', 
                     borderColor: 'transparent',
                     ...(orientation === 'horizontal'
                         ? {
