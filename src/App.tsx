@@ -64,7 +64,6 @@ export const ENABLE_LICENSING = false;
 
 const App: React.FC = () => {
   const edgePosition = useAppStore(state => state.edgePosition);
-  const setEdgePosition = useAppStore(state => state.setEdgePosition);
 
   const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
   const isMiniMode = useAppStore(state => state.isMiniMode);
@@ -244,7 +243,9 @@ const App: React.FC = () => {
     }
     if (window.api?.onEdgeChanged) {
       window.api.onEdgeChanged((edge, bounds) => {
-        setEdgePosition(edge);
+        // Note: we intentionally do NOT overwrite edgePosition here.
+        // The renderer's Sidebar drag logic owns edgePosition (based on the sidebar's
+        // real screen position); the main-process edge event is only used to refresh bounds.
         if (bounds) useAppStore.getState().setScreenBounds(bounds);
       });
     }
@@ -317,7 +318,7 @@ const App: React.FC = () => {
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [setEdgePosition]);
+  }, []);
 
   // Persist tracking across any possible re-renders without falling out of scope
   const lastIgnoreState = useRef<boolean | null>(null);

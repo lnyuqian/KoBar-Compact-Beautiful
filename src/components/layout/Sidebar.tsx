@@ -73,6 +73,26 @@ const Sidebar: React.FC = () => {
                 localDisplaysRef.current = info;
             }).catch(() => { });
         }
+        // Initialize edgePosition from the sidebar's REAL screen position on mount,
+        // so NotePanel padding/etc. matches where the panel actually sits (not a stale persisted value).
+        if (window.api?.getWindowPositionSync && window.api?.getDisplaysInfo) {
+            const [wx] = window.api.getWindowPositionSync();
+            const wrapperEl = document.getElementById('kobar-sidebar-wrapper');
+            if (wrapperEl) {
+                const rect = wrapperEl.getBoundingClientRect();
+                const sidebarScreenCenterX = wx + rect.left + (rect.width / 2);
+                window.api.getDisplaysInfo().then(info => {
+                    const activeDisplay = info.allDisplays.find(d =>
+                        sidebarScreenCenterX >= d.bounds.x && sidebarScreenCenterX < (d.bounds.x + d.bounds.width)
+                    ) ?? info.primaryDisplay;
+                    if (activeDisplay) {
+                        const center = activeDisplay.bounds.x + (activeDisplay.bounds.width / 2);
+                        const edge = sidebarScreenCenterX < center ? 'left' : 'right';
+                        useAppStore.getState().setEdgePosition(edge);
+                    }
+                }).catch(() => { });
+            }
+        }
     }, []);
 
     React.useEffect(() => {
