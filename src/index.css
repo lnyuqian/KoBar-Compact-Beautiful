@@ -325,7 +325,6 @@ body {
 /* Tiptap Editor Dark Theme Overrides */
 .tiptap {
   outline: none;
-  min-height: 200px;
   color: #d4d4d4;
   /* neutral gray-300 */
   font-size: 1.125rem;
@@ -460,6 +459,14 @@ hr {
 
 .md-render > * {
   margin-top: 0;
+}
+
+/* Zero out the last element's bottom margin so the content bottom
+   sits flush at the scroll edge — prevents "empty space below text
+   before the scrollbar" in both read and edit modes */
+.md-render > :last-child,
+.tiptap > :last-child {
+  margin-bottom: 0;
 }
 
 .md-render h1,
