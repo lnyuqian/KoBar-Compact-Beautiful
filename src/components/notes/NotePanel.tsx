@@ -195,8 +195,8 @@ const NotePanel: React.FC = () => {
                 className="flex flex-col pt-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
                 style={{
                     backgroundColor: '#424242',
-                    paddingLeft: `${edgePosition === 'left' ? 4 : 2}%`,
-                    paddingRight: `${edgePosition === 'right' ? 4 : 2}%`,
+                    paddingLeft: `${edgePosition === 'left' ? 5 : 2}%`,
+                    paddingRight: `${edgePosition === 'right' ? 5 : 2}%`,
                 }}
             >
                 {/* Tab grid: 2 per row, 93% width, 7% right gap */}
