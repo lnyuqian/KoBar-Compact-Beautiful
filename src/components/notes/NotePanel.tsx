@@ -211,7 +211,7 @@ const NotePanel: React.FC = () => {
                             {!note.isSettings && (
                                 <span
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
-                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[16px]' : 'text-[19px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
+                                    className={`${isFavorite(note.id) ? 'material-symbols-rounded' : 'material-symbols-rounded-fill0'} ${isFavorite(note.id) ? 'text-[14px]' : 'text-[19px]'} cursor-pointer shrink-0 ${isFavorite(note.id) ? 'text-[#FFD54F]' : 'text-[#989898] hover:text-slate-200'}`}
                                     title={isFavorite(note.id) ? t('unfavorite') : t('favorite')}
                                 >
                                     {isFavorite(note.id) ? 'star' : 'star_border'}
@@ -239,14 +239,14 @@ const NotePanel: React.FC = () => {
                             className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5 cursor-pointer"
                             title={t('addNewNote')}
                         >
-                            <span className="material-symbols-rounded text-[14px]">add</span>
+                            <span className="material-symbols-rounded text-[16px]">add</span>
                         </button>
                         <button
                             onClick={() => setIsEditing(!isEditing)}
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${isEditing ? 'text-primary' : 'text-[#989898] hover:text-primary'}`}
                             title={isEditing ? t('doneEditing') : t('editMode')}
                         >
-                            <span className="material-symbols-rounded text-[8px]">{isEditing ? 'edit' : 'auto_stories'}</span>
+                            <span className="material-symbols-rounded text-[6px]">{isEditing ? 'edit' : 'auto_stories'}</span>
                         </button>
                         <button
                             ref={favBtnRef}
