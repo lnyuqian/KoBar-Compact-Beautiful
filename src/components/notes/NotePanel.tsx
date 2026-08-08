@@ -208,9 +208,9 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region bg-[#383838] ${note.id === activeNoteId
+                            className={`group w-full pl-1.5 pr-1 py-0.5 text-xs font-medium rounded-md flex items-center gap-1.5 whitespace-nowrap overflow-hidden shrink-0 snap-start no-drag-region ${note.id === activeNoteId
                                 ? 'text-slate-200 border-l-2 border-[#828282] bg-[#2E2E2E]'
-                                : 'text-white cursor-pointer border-l-2 border-transparent'
+                                : 'text-white cursor-pointer border-l-2 border-transparent bg-[#383838]'
                                 }`}
                         >
                             {/* Favorite star (left side of each tab) */}
