@@ -32,6 +32,7 @@ const NotePanel: React.FC = () => {
     const isMac = useAppStore(state => state.isMac);
     const isEditing = useAppStore(state => state.isEditing);
     const setIsEditing = useAppStore(state => state.setIsEditing);
+    const edgePosition = useAppStore(state => state.edgePosition);
 
     const activeNote = notes.find(n => n.id === activeNoteId);
 
@@ -191,8 +192,12 @@ const NotePanel: React.FC = () => {
 
             {/* Tabs Header */}
             <div
-                className="flex flex-col pt-2 px-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
-                style={{ backgroundColor: '#424242' }}
+                className="flex flex-col pt-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
+                style={{
+                    backgroundColor: '#424242',
+                    paddingLeft: `${edgePosition === 'left' ? 8 : 2}%`,
+                    paddingRight: `${edgePosition === 'right' ? 8 : 2}%`,
+                }}
             >
                 {/* Tab grid: 2 per row, 93% width, 7% right gap */}
                 <div
