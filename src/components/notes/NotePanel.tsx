@@ -192,7 +192,7 @@ const NotePanel: React.FC = () => {
             {/* Tabs Header */}
             <div
                 className="flex flex-col pt-2 px-2 pb-2 gap-1.5 no-drag-region shrink-0 relative"
-                style={{ backgroundColor: '#424242' }}
+                style={{ backgroundColor: '#323232' }}
             >
                 {/* Tab grid: 2 per row, 93% width, 7% right gap */}
                 <div
@@ -399,7 +399,7 @@ const NotePanel: React.FC = () => {
             {/* Editor or Settings Area */}
             <div
                 className="flex-1 flex flex-col overflow-hidden"
-                style={{ backgroundColor: '#323232' }}
+                style={{ backgroundColor: '#424242' }}
             >
                 {activeNote?.isSettings ? (
                     <SettingsPanel />
