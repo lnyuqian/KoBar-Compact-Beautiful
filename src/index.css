@@ -417,6 +417,11 @@ hr {
   margin-bottom: 0.25rem;
 }
 
+/* Tiptap list items also contain <p> children — clear their margins too */
+.tiptap li p {
+  margin: 0;
+}
+
 .tiptap ul>li::marker {
   color: var(--theme-marker);
 }
@@ -490,6 +495,11 @@ hr {
 .md-render ol { list-style-type: decimal; }
 .md-render li { margin-bottom: 0.25rem; }
 .md-render li::marker { color: var(--theme-marker); }
+/* List items render as <li><p>…</p></li> in react-markdown: zero the inner
+   paragraph margins so row spacing is controlled by li only */
+.md-render li p {
+  margin: 0;
+}
 
 .md-render blockquote {
   border-left: 3px solid var(--theme-primary);
