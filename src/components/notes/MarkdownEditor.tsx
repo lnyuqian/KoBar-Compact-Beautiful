@@ -10,11 +10,13 @@ interface MarkdownEditorProps {
     value: string;
     fontSize: number;
     lineHeight: number;
+    paddingLeftPercent?: number;
+    paddingRightPercent?: number;
     onChange: (md: string) => void;
     onReady?: (view: EditorView) => void;
 }
 
-const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, fontSize, lineHeight, onChange, onReady }) => {
+const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, fontSize, lineHeight, paddingLeftPercent = 0, paddingRightPercent = 0, onChange, onReady }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
@@ -58,7 +60,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, fontSize, lineHe
         }
     }, [fontSize, lineHeight]);
 
-    return <div ref={containerRef} className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar no-drag-region" />;
+    return <div ref={containerRef} className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar no-drag-region" style={{ paddingLeft: `${paddingLeftPercent}%`, paddingRight: `${paddingRightPercent}%` }} />;
 };
 
 export default MarkdownEditor;

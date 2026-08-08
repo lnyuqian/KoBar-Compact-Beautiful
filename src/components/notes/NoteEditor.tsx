@@ -82,6 +82,7 @@ const COLOR_PRESETS = ['#ffffff', '#e5e5e5', '#a3a3a3', '#737373', '#f43f5e', '#
 
 const NoteEditor: React.FC = React.memo(() => {
     const { activeNoteId, updateNoteTitle, t, design } = useAppStore();
+    const edgePosition = useAppStore(state => state.edgePosition);
     const activeNote = useAppStore((state) => state.notes.find(n => n.id === activeNoteId));
     const editorFontSize = useAppStore((state) => state.editorFontSize);
     const setEditorFontSize = useAppStore((state) => state.setEditorFontSize);
@@ -303,9 +304,14 @@ const NoteEditor: React.FC = React.memo(() => {
 
     if (!activeNote) return null;
 
+    // Keep the content column aligned with the two-column tab grid above:
+    // the screen-edge side keeps the larger inset (same rule as NotePanel).
+    const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
+    const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
+
     return (
         <div
-            className={`relative flex-1 p-5 flex flex-col overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
+            className={`relative flex-1 pt-5 pb-5 flex flex-col overflow-x-hidden w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}
         >
             {/* Hidden file input for image selection */}
             <input
@@ -318,7 +324,7 @@ const NoteEditor: React.FC = React.memo(() => {
 
             {/* Title: edit mode only (read mode shows body only; title lives on the tab) */}
             {isEditing && (
-                <div className="flex items-center gap-4 mb-2 no-drag-region">
+                <div className="flex items-center gap-4 mb-2 no-drag-region" style={{ paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%` }}>
                     <input
                         className="bg-transparent font-normal text-slate-100 border-none outline-none w-full focus:ring-0 placeholder-slate-700"
                         style={{ fontSize: editorFontSize + 6 }}
@@ -332,7 +338,7 @@ const NoteEditor: React.FC = React.memo(() => {
 
             {/* Formatting Toolbar (Edit Mode Only) */}
             {isEditing && (
-                <div className="flex items-center gap-2.5 mb-4 pb-3 border-b text-[#a3a3a3] no-drag-region flex-wrap" style={{ borderColor: 'var(--theme-border)' }}>
+                <div className="flex items-center gap-2.5 mb-4 pb-3 border-b text-[#a3a3a3] no-drag-region flex-wrap" style={{ borderColor: 'var(--theme-border)', paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%` }}>
                     {/* Image insert */}
                     <button
                         onClick={triggerImagePicker}
@@ -400,7 +406,7 @@ const NoteEditor: React.FC = React.memo(() => {
                 Double-click toggles: read → edit, edit → read */}
             {isEditing ? (
                 <div
-                    className="flex-1 min-h-0 flex flex-col no-drag-region -mx-5 px-5"
+                    className="flex-1 min-h-0 flex flex-col no-drag-region"
                     onDoubleClick={exitEditMode}
                 >
                     <MarkdownEditor
@@ -408,20 +414,22 @@ const NoteEditor: React.FC = React.memo(() => {
                         value={initialMd}
                         fontSize={editorFontSize}
                         lineHeight={editorLineHeight}
+                        paddingLeftPercent={panelPaddingLeft}
+                        paddingRightPercent={panelPaddingRight}
                         onChange={handleMdChange}
                         onReady={(view) => { cmViewRef.current = view; }}
                     />
                 </div>
             ) : looksLikeMarkdown(activeNote.content) ? (
                 <div
-                    className="md-render flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar -mx-5 px-5"
-                    style={{ fontSize: `${editorFontSize}px`, lineHeight: String(editorLineHeight) }}
+                    className="md-render flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar"
+                    style={{ fontSize: `${editorFontSize}px`, lineHeight: String(editorLineHeight), paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%` }}
                     onDoubleClick={enterEditMode}
                 >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeNote.content}</ReactMarkdown>
                 </div>
             ) : (
-                <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region -mx-5 px-5" onDoubleClick={enterEditMode} />
+                <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region" style={{ paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%` }} onDoubleClick={enterEditMode} />
             )}
         </div>
     );

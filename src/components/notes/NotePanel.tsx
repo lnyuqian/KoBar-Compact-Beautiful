@@ -40,6 +40,21 @@ const NotePanel: React.FC = () => {
     const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
     const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
 
+    // Copy the active note's full text (plain text from the stored HTML)
+    const [copied, setCopied] = useState(false);
+    const handleCopyNote = useCallback(() => {
+        const note = notes.find(n => n.id === activeNoteId);
+        if (!note) return;
+        const tmp = document.createElement('div');
+        tmp.innerHTML = note.content;
+        const text = tmp.textContent || '';
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(() => { });
+        }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+    }, [notes, activeNoteId]);
+
     const activeNote = notes.find(n => n.id === activeNoteId);
 
     // Direct DOM access for zero-latency resizing
@@ -279,6 +294,13 @@ const NotePanel: React.FC = () => {
                             title={t('favorites')}
                         >
                             <img src={favoritedIcon} alt="" width={18} height={18} className="block" />
+                        </button>
+                        <button
+                            onClick={handleCopyNote}
+                            className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${copied ? 'text-[#4ade80]' : 'text-[#989898] hover:text-primary'}`}
+                            title="Copy Note"
+                        >
+                            <span className={`material-symbols-rounded text-[18px] ${copied ? 'text-[#4ade80]' : 'text-[#989898]'}`}>content_copy</span>
                         </button>
                     </div>
                     <button
