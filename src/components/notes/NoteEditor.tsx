@@ -423,13 +423,13 @@ const NoteEditor: React.FC = React.memo(() => {
             ) : looksLikeMarkdown(activeNote.content) ? (
                 <div
                     className="md-render flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region custom-scrollbar"
-                    style={{ fontSize: `${editorFontSize}px`, lineHeight: String(editorLineHeight), paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%`, marginBottom: -10 }}
+                    style={{ fontSize: `${editorFontSize}px`, lineHeight: String(editorLineHeight), paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%`, marginBottom: 0 }}
                     onDoubleClick={enterEditMode}
                 >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeNote.content}</ReactMarkdown>
                 </div>
             ) : (
-                <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region" style={{ paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%`, marginBottom: -10 }} onDoubleClick={enterEditMode} />
+                <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region" style={{ paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%`, marginBottom: 0 }} onDoubleClick={enterEditMode} />
             )}
         </div>
     );
