@@ -300,7 +300,10 @@ const NotePanel: React.FC = () => {
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${copied ? 'text-[#4ade80]' : 'text-[#989898] hover:text-primary'}`}
                             title="Copy Note"
                         >
-                            <span className={`material-symbols-rounded text-[14px] ${copied ? 'text-[#4ade80]' : 'text-[#989898]'}`}>content_copy</span>
+                            <span
+                                className={`material-symbols-rounded text-[14px] ${copied ? 'text-[#4ade80]' : 'text-[#989898]'}`}
+                                style={{ fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 14" }}
+                            >content_copy</span>
                         </button>
                     </div>
                     <button
