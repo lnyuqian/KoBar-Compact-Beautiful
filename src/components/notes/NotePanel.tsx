@@ -199,6 +199,7 @@ const NotePanel: React.FC = () => {
                     paddingRight: `${edgePosition === 'right' ? 5 : 2}%`,
                 }}
             >
+                <div className="absolute top-0 left-0 z-[999] text-[10px] text-red-400 bg-black/60 px-1 rounded pointer-events-none">edge={edgePosition}</div>
                 {/* Tab grid: 2 per row, 93% width, 7% right gap */}
                 <div
                     ref={tabsRef}
