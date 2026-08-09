@@ -52,19 +52,24 @@ const ParagraphWithCopy = Node.create({
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => {
                 const text = node.textContent || '';
-                try {
-                    if (navigator.clipboard?.writeText) {
-                        navigator.clipboard.writeText(text);
-                    } else {
+                const copyViaTextarea = () => {
+                    try {
                         const ta = document.createElement('textarea');
                         ta.value = text;
                         document.body.appendChild(ta);
                         ta.select();
                         document.execCommand('copy');
                         document.body.removeChild(ta);
+                    } catch (err) {
+                        console.error('Copy failed:', err);
                     }
-                } catch (err) {
-                    console.error('Copy failed:', err);
+                };
+                if (window.api?.writeToClipboard) {
+                    window.api.writeToClipboard({ type: 'text', content: text });
+                } else if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(text).catch(copyViaTextarea);
+                } else {
+                    copyViaTextarea();
                 }
                 btn.style.color = '#FFD54F';
                 setTimeout(() => { btn.style.color = ''; }, 1500);

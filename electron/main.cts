@@ -1267,9 +1267,11 @@ ipcMain.on('start-clipboard-listener', () => {
 });
 
 ipcMain.on('write-to-clipboard', (_event, data: { type: string; content: string }) => {
+    console.log('[clipboard] write-to-clipboard received:', data?.type, 'len=', data?.content?.length);
     if (data.type === 'text') {
         clipboard.writeText(data.content);
         lastClipboardText = data.content;
+        console.log('[clipboard] text written, ok');
     } else if (data.type === 'image') {
         const img = nativeImage.createFromDataURL(data.content);
         clipboard.writeImage(img);
