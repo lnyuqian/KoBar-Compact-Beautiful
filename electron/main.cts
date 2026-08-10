@@ -5,6 +5,16 @@ import { exec, execFile, ChildProcess } from 'child_process';
 import { LicenseManager } from './licenseManager.cjs';
 import { autoUpdater } from 'electron-updater';
 import AdmZip from 'adm-zip';
+import {
+    GHOST_WINDOW_WIDTH,
+    GHOST_WINDOW_HEIGHT,
+    DEFAULT_SIDEBAR_RECT,
+    SIDEBAR_EDGE_MARGIN,
+    getGhostBounds,
+    getGhostCenter
+} from './window-geometry.cjs';
+import { createClipboardController } from './clipboard.cjs';
+import { createTray } from './tray.cjs';
 
 // 鈹€鈹€鈹€ KoPlayer: Worker Thread Setup 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 import { Worker } from 'worker_threads';
@@ -35,51 +45,14 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 
-// ─── Ghost Window Geometry Constants ─────────────────────────────────────
-// Fallback size used only if no displays are reported by the OS.
-const GHOST_WINDOW_WIDTH = 6000;
-const GHOST_WINDOW_HEIGHT = 4000;
-// Initial visual sidebar rectangle; the renderer keeps it in sync via updateSidebarRect.
-const DEFAULT_SIDEBAR_RECT = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
-// Distance from the right edge of the ghost window to the default sidebar position.
-const SIDEBAR_EDGE_MARGIN = 40;
-
-// Returns the bounding box that covers every display's workArea. The ghost
-// window is sized to exactly this box (instead of a fixed 6000x4000), which
-// slashes GPU/compositor cost on typical setups while still spanning all
-// monitors for free-floating drag and multi-monitor edge detection.
-function getGhostBounds(): { x: number; y: number; width: number; height: number } {
-    const displays = screen.getAllDisplays();
-    if (displays.length === 0) {
-        return { x: 0, y: 0, width: GHOST_WINDOW_WIDTH, height: GHOST_WINDOW_HEIGHT };
-    }
-    let minX = Number.POSITIVE_INFINITY;
-    let minY = Number.POSITIVE_INFINITY;
-    let maxX = Number.NEGATIVE_INFINITY;
-    let maxY = Number.NEGATIVE_INFINITY;
-    for (const d of displays) {
-        const wa = d.workArea;
-        minX = Math.min(minX, wa.x);
-        minY = Math.min(minY, wa.y);
-        maxX = Math.max(maxX, wa.x + wa.width);
-        maxY = Math.max(maxY, wa.y + wa.height);
-    }
-    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-}
-
-// Center of the ghost window in window-relative coordinates.
-function getGhostCenter(): { x: number; y: number } {
-    const b = getGhostBounds();
-    return { x: b.width / 2, y: b.height / 2 };
-}
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
-let clipboardPollingInterval: ReturnType<typeof setInterval> | null = null;
-let lastClipboardText = '';
-let lastClipboardImageDataUrl = '';
-let lastClipboardImageBmp: Buffer | null = null;
 let currentEdge: string = 'left';
+const clipboardController = createClipboardController({
+    getWindow: () => mainWindow,
+    isMac
+});
 let psProcess: ChildProcess | null = null;
 let isGlobalPasteModeActive = false;
 let isAwaitingPinTarget = false;
@@ -372,145 +345,7 @@ function teleportToPrimaryCenter(showWindow = true) {
     mainWindow.webContents.send('force-center-mini-mode');
 }
 
-// --- Clipboard Polling ---
-function startClipboardPolling() {
-    if (clipboardPollingInterval) return;
-    lastClipboardText = clipboard.readText() || '';
-    const initialImg = clipboard.readImage();
-    lastClipboardImageDataUrl = initialImg.isEmpty() ? '' : initialImg.toDataURL();
-    clipboardPollingInterval = setInterval(() => {
-        if (!mainWindow) return;
 
-        const formats = clipboard.availableFormats();
-
-        // 1. FAST PATH: Check for Text
-        if (formats.includes('text/plain')) {
-            const currentText = clipboard.readText() || '';
-            if (currentText && currentText !== lastClipboardText) {
-                lastClipboardText = currentText;
-                lastClipboardImageDataUrl = '';
-                lastClipboardImageBmp = null; // Clear raw image cache to free RAM
-                mainWindow.webContents.send('clipboard-updated', { type: 'text', content: currentText });
-            }
-            return;
-        }
-
-        // 2. HEAVY PATH: Buffer-level comparison to avoid toDataURL blocking
-        if (formats.includes('image/png') || formats.includes('image/jpeg')) {
-            const currentImage = clipboard.readImage();
-            if (!currentImage.isEmpty()) {
-                const bmp = currentImage.toBitmap(); // FAST: raw uncompressed memory
-
-                // memcmp check: ONLY run expensive compression if raw bytes changed
-                if (!lastClipboardImageBmp || !lastClipboardImageBmp.equals(bmp)) {
-                    lastClipboardImageBmp = bmp; // Cache the raw buffer
-                    lastClipboardText = '';
-
-                    // EXECUTED ONLY ONCE PER NEW IMAGE
-                    const currentDataUrl = currentImage.toDataURL();
-                    lastClipboardImageDataUrl = currentDataUrl;
-
-                    if (!mainWindow.isVisible()) {
-                        mainWindow.show();
-                    }
-                    if (mainWindow.isMinimized()) mainWindow.restore();
-                    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-                    mainWindow.focus();
-
-                    mainWindow.webContents.send('clipboard-updated', { type: 'image', content: currentDataUrl });
-                }
-            }
-        }
-    }, isMac ? 1000 : 500);
-}
-
-function stopClipboardPolling() {
-    // Actually stop the polling timer (previously commented out, which meant
-    // the 500ms clipboard read loop could never be stopped from the UI).
-    if (clipboardPollingInterval) {
-        clearInterval(clipboardPollingInterval);
-        clipboardPollingInterval = null;
-    }
-    lastClipboardText = '';
-    lastClipboardImageDataUrl = '';
-    lastClipboardImageBmp = null; // Release raw image cache so the privacy toggle frees RAM
-}
-
-function createTray() {
-    // Resolve the icon path dynamically for both development and packaged environments
-    // Dev path relative to dist-electron: ../build/icon-256x256.ico
-    const iconPath = path.join(__dirname, '../build/icon-256x256.ico');
-
-    let trayIcon = nativeImage.createFromPath(iconPath);
-
-    // Fallback resolution using the app root if current path fails
-    if (trayIcon.isEmpty()) {
-        const rootPath = path.join(app.getAppPath(), 'build/icon-256x256.ico');
-        trayIcon = nativeImage.createFromPath(rootPath);
-    }
-
-    // In case of emergency (still empty), attempt to use a standard PNG logo as last resort
-    if (trayIcon.isEmpty()) {
-        const pngPath = path.join(__dirname, '../build/icon.png');
-        trayIcon = nativeImage.createFromPath(pngPath).resize({ width: 16, height: 16 });
-    }
-
-    tray = new Tray(trayIcon);
-
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Show/Hide KoBar',
-            click: () => {
-                if (mainWindow) {
-                    if (mainWindow.isVisible() && !mainWindow.isMinimized()) {
-                        mainWindow.hide();
-                    } else {
-                        // Teleport to primary display center before showing
-                        teleportToPrimaryCenter();
-                    }
-                }
-            }
-        },
-        {
-            label: 'Settings',
-            click: () => {
-                if (mainWindow) {
-                    teleportToPrimaryCenter();
-                    mainWindow.webContents.send('open-settings');
-                }
-            }
-        },
-        {
-            label: 'Teleport to Center',
-            click: () => {
-                if (mainWindow) {
-                    teleportToPrimaryCenter();
-                }
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Quit',
-            click: () => {
-                app.quit();
-            }
-        }
-    ]);
-
-    tray.setToolTip('KoBar');
-    tray.setContextMenu(contextMenu);
-
-    tray.on('double-click', () => {
-        if (mainWindow) {
-            if (mainWindow.isVisible() && !mainWindow.isMinimized()) {
-                mainWindow.hide();
-            } else {
-                // Teleport to primary display center before showing
-                teleportToPrimaryCenter();
-            }
-        }
-    });
-}
 
 app.whenReady().then(() => {
     // Ensure KoBox exists
@@ -527,7 +362,10 @@ app.whenReady().then(() => {
     }
 
     createWindow();
-    createTray();
+    tray = createTray({
+        getWindow: () => mainWindow,
+        onTeleport: teleportToPrimaryCenter
+    });
 
     // Handle microphone permissions explicitly for voice-to-text
     session.defaultSession.setPermissionCheckHandler((_webContents: WebContents | null, permission: string) => {
@@ -543,7 +381,7 @@ app.whenReady().then(() => {
         }
     });
 
-    startClipboardPolling();
+    clipboardController.start();
     startMediaPolling();
 
     app.on('activate', () => {
@@ -1278,23 +1116,23 @@ ipcMain.on('set-auto-launch', (_event, enabled: boolean) => {
 });
 
 ipcMain.on('start-clipboard-listener', () => {
-    startClipboardPolling();
+    clipboardController.start();
 });
 
 ipcMain.on('stop-clipboard-listener', () => {
-    stopClipboardPolling();
+    clipboardController.stop();
 });
 
 ipcMain.on('write-to-clipboard', (_event, data: { type: string; content: string }) => {
     console.log('[clipboard] write-to-clipboard received:', data?.type, 'len=', data?.content?.length);
     if (data.type === 'text') {
         clipboard.writeText(data.content);
-        lastClipboardText = data.content;
+        clipboardController.markWritten(data);
         console.log('[clipboard] text written, ok');
     } else if (data.type === 'image') {
         const img = nativeImage.createFromDataURL(data.content);
         clipboard.writeImage(img);
-        lastClipboardImageDataUrl = data.content;
+        clipboardController.markWritten(data);
     }
 });
 
@@ -1322,11 +1160,11 @@ ipcMain.on('set-global-paste-mode', (event, isActive) => {
 ipcMain.on('execute-global-paste', (event, data) => {
     if (data.type === 'text') {
         clipboard.writeText(data.content);
-        lastClipboardText = data.content;
+        clipboardController.markWritten(data);
     } else if (data.type === 'image') {
         const img = nativeImage.createFromDataURL(data.content);
         clipboard.writeImage(img);
-        lastClipboardImageDataUrl = data.content;
+        clipboardController.markWritten(data);
     }
     globalShortcut.unregister('CommandOrControl+V');
 
@@ -1605,8 +1443,7 @@ ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format:
 ipcMain.on('copy-screenshot-to-clipboard', (_event, dataUrl: string) => {
     const img = nativeImage.createFromDataURL(dataUrl);
     clipboard.writeImage(img);
-    lastClipboardImageDataUrl = dataUrl;
-    lastClipboardImageBmp = img.toBitmap();
+    clipboardController.markWritten({ type: 'image', content: dataUrl });
     // Let the existing clipboard polling pick this up for the FIFO queue
 });
 
