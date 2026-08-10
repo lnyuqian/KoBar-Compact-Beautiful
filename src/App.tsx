@@ -265,43 +265,48 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Persist tracking across any possible re-renders without falling out of scope
-  const lastIgnoreState = useRef<boolean | null>(null);
+ // Persist tracking across any possible re-renders without falling out of scope
+ const lastIgnoreState = useRef<boolean | null>(null);
+  // rAF coalescing: elementFromPoint is expensive, so run it at most once per frame
+  const rafPending = useRef(false);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
-      // Do not allow the OS to steal the mouseup event through the ghost window.
-      if (isResizingGlobal) {
-        if (lastIgnoreState.current !== false) {
-          window.api?.setIgnoreMouseEvents(false);
-          lastIgnoreState.current = false;
-        }
-        return;
-      }
+ useEffect(() => {
+   const handleMouseMove = (e: MouseEvent) => {
+     lastMouseX = e.clientX;
+     lastMouseY = e.clientY;
+     // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
+     // Do not allow the OS to steal the mouseup event through the ghost window.
+     if (isResizingGlobal) {
+       if (lastIgnoreState.current !== false) {
+         window.api?.setIgnoreMouseEvents(false);
+         lastIgnoreState.current = false;
+       }
+       return;
+     }
 
-      const target = e.target as HTMLElement;
-      
-      // If the target or any of its parents has pointer-events-auto, it is a solid UI element.
-      // Otherwise, we consider it a transparent part of the ghost window.
-      const isSolid = target.closest('.pointer-events-auto') !== null;
-      const isTransparent = !isSolid;
-
-      // IPC Flood Protection: Only trigger Electron main process communication linearly on pure state boundary crossings
-      if (isTransparent !== lastIgnoreState.current) {
-        const isMacLocal = useAppStore.getState().isMac;
-        if (isMacLocal) {
-          requestAnimationFrame(() => {
+      if (rafPending.current) return;
+      rafPending.current = true;
+      requestAnimationFrame(() => {
+        rafPending.current = false;
+        const el = document.elementFromPoint(lastMouseX, lastMouseY);
+        // If the target or any of its parents has pointer-events-auto, it is a solid UI element.
+        // Otherwise, we consider it a transparent part of the ghost window.
+        const isSolid = el ? el.closest('.pointer-events-auto') !== null : false;
+        const isTransparent = !isSolid;
+        // IPC Flood Protection: Only trigger main-process communication on pure state boundary crossings
+        if (isTransparent !== lastIgnoreState.current) {
+          const isMacLocal = useAppStore.getState().isMac;
+          if (isMacLocal) {
+            requestAnimationFrame(() => {
+              window.api?.setIgnoreMouseEvents(isTransparent);
+            });
+          } else {
             window.api?.setIgnoreMouseEvents(isTransparent);
-          });
-        } else {
-          window.api?.setIgnoreMouseEvents(isTransparent);
+          }
+          lastIgnoreState.current = isTransparent;
         }
-        lastIgnoreState.current = isTransparent;
-      }
-    };
+      });
+   };
     
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
