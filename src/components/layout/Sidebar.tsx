@@ -7,8 +7,24 @@ import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 import TooltipButton from './TooltipButton';
 import { CartoonEye } from './MaskIcon';
 import EyeNotification from './EyeNotification';
-import { useExtensionRegistry } from '../extensions/extensionRegistry';
 import dragIcon from '../../assets/icons/drag.svg';
+
+// The main process sizes the ghost window to the union of all displays and
+// exposes its center via a synchronous IPC call. The window size is stable for
+// the app session, so the result is cached after the first read.
+let cachedGhostCenter: { x: number; y: number } | null = null;
+function getGhostCenter(): { x: number; y: number } {
+    if (cachedGhostCenter) return cachedGhostCenter;
+    try {
+        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: 3000, y: 2000 };
+    } catch {
+        cachedGhostCenter = { x: 3000, y: 2000 };
+    }
+    return cachedGhostCenter;
+}
+function getGhostWidth(): number {
+    return getGhostCenter().x * 2;
+}
 
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
@@ -25,9 +41,6 @@ const Sidebar: React.FC = () => {
 
 
 
-    const featureOrder = useAppStore(state => state.featureOrder);
-    const setFeatureOrder = useAppStore(state => state.setFeatureOrder);
-    const featureSpacing = useAppStore(state => state.featureSpacing);
 
     const design = useAppStore(state => state.design);
     const sidebarWidth = useAppStore(state => state.sidebarWidth);
@@ -39,12 +52,6 @@ const Sidebar: React.FC = () => {
 
 
     
-    // Dynamic Extensions selectors
-    const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
-    const extensionReloadTrigger = useAppStore(state => state.extensionReloadTrigger);
-    void extensionReloadTrigger; // Force re-render on reload, mark as used to prevent TS6133
-    const extensionsRegistry = useExtensionRegistry();
-
     // Sidebar drag state
     const setSidebarPosition = useAppStore(state => state.setSidebarPosition);
     const [isSidebarDragging, setIsSidebarDragging] = React.useState(false);
@@ -57,9 +64,6 @@ const Sidebar: React.FC = () => {
     const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
 
-    const [reorderMode, setReorderMode] = React.useState<boolean>(false);
-    const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [dragOverId, setDragOverId] = React.useState<string | null>(null);
     const [isDev, setIsDev] = React.useState(false);
 
     React.useEffect(() => {
@@ -100,109 +104,20 @@ const Sidebar: React.FC = () => {
         }).catch(() => { });
     }, [isMiniMode, sidebarPosition]);
 
-    React.useEffect(() => {
-        const handleGlobalClick = () => {
-            if (reorderMode) setReorderMode(false);
-        };
-        window.addEventListener('click', handleGlobalClick);
-        return () => window.removeEventListener('click', handleGlobalClick);
-    }, [reorderMode]);
-
-    const handlePluginMouseDown = (e: React.MouseEvent) => {
-        if (e.button !== 0 || reorderMode) return;
-        longPressTimeout.current = setTimeout(() => {
-            setReorderMode(true);
-            setIsDragScrolling(false);
-        }, 500);
-    };
-
-    const handlePluginMouseUp = () => {
-        if (longPressTimeout.current) {
-            clearTimeout(longPressTimeout.current);
-            longPressTimeout.current = null;
-        }
-    };
-
-    const onPluginDragStart = (e: React.DragEvent, id: string) => {
-        e.dataTransfer.setData('text/plain', id);
-        e.dataTransfer.effectAllowed = 'move';
-        e.stopPropagation();
-    };
-
-    const onPluginDragOver = (e: React.DragEvent, id: string) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        if (dragOverId !== id) {
-            setDragOverId(id);
-        }
-    };
-
-    const onPluginDrop = (e: React.DragEvent, targetId: string) => {
-        e.preventDefault();
-        setDragOverId(null);
-        const sourceId = e.dataTransfer.getData('text/plain');
-        if (sourceId && sourceId !== targetId) {
-            const newOrder = [...featureOrder];
-            const sourceIdx = newOrder.indexOf(sourceId);
-            const targetIdx = newOrder.indexOf(targetId);
-            
-            if (sourceIdx !== -1 && targetIdx !== -1) {
-                newOrder.splice(sourceIdx, 1);
-                newOrder.splice(targetIdx, 0, sourceId);
-                setFeatureOrder(newOrder);
-            }
-        }
-    };
 
 
-    
-    // Drag to scroll logic
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-    const [isDragScrolling, setIsDragScrolling] = React.useState(false);
-    const scrollDragStart = React.useRef({ y: 0, scrollTop: 0 });
+
+
+
+
+
 
     const screenBounds = useAppStore(state => state.screenBounds);
     const calculatedMaxHeight = screenBounds ? Math.max(200, screenBounds.height - 40) : 800;
     const calculatedMaxWidth = screenBounds ? Math.max(200, screenBounds.width - 40) : 1200;
 
-    const handleScrollMouseDown = (e: React.MouseEvent) => {
-        if (e.button !== 0 || e.defaultPrevented) return;
-        setIsDragScrolling(true);
-        setIsResizingGlobal(true);
-        scrollDragStart.current = { 
-            y: orientation === 'horizontal' ? e.clientX : e.clientY, 
-            scrollTop: orientation === 'horizontal' 
-                ? (scrollRef.current?.scrollLeft || 0) 
-                : (scrollRef.current?.scrollTop || 0) 
-        };
-    };
 
-    React.useEffect(() => {
-        const handleScrollMouseMove = (e: MouseEvent) => {
-            if (!isDragScrolling || !scrollRef.current) return;
-            const d = (orientation === 'horizontal' ? e.clientX : e.clientY) - scrollDragStart.current.y;
-            if (orientation === 'horizontal') {
-                scrollRef.current.scrollLeft = scrollDragStart.current.scrollTop - d;
-            } else {
-                scrollRef.current.scrollTop = scrollDragStart.current.scrollTop - d;
-            }
-        };
-        const handleScrollMouseUp = () => {
-            if (isDragScrolling) {
-                setIsDragScrolling(false);
-                setIsResizingGlobal(false);
-            }
-        };
 
-        if (isDragScrolling) {
-            window.addEventListener('mousemove', handleScrollMouseMove);
-            window.addEventListener('mouseup', handleScrollMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleScrollMouseMove);
-            window.removeEventListener('mouseup', handleScrollMouseUp);
-        };
-    }, [isDragScrolling, orientation]);
 
     // Sidebar drag-to-move logic (drag the top handle bar)
     const handleSidebarDragStart = (e: React.MouseEvent) => {
@@ -277,7 +192,7 @@ const Sidebar: React.FC = () => {
                 );
 
                 if (activeDisplay) {
-                    const windowWidth = 6000;
+                    const windowWidth = getGhostWidth();
                     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
                     const newWinY = activeDisplay.workArea.y;
 
@@ -347,8 +262,8 @@ const Sidebar: React.FC = () => {
                 const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
                 const physicalCurrentY = physicalOriginY + newY + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
-                let activeScreenPhysicalCenter = physicalOriginX + 3000; // Fallback to primary
-                let activeScreenPhysicalCenterY = physicalOriginY + 2000;
+                let activeScreenPhysicalCenter = physicalOriginX + getGhostCenter().x; // Fallback to primary
+                let activeScreenPhysicalCenterY = physicalOriginY + getGhostCenter().y;
 
                 const activeMonitor = allDisplays.find(d => 
                     physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
@@ -426,15 +341,15 @@ const Sidebar: React.FC = () => {
                 } else {
                     // Since the window has been recentered on the active monitor, the active monitor's bounds
                     // relative to the window are simplified:
-                    // window center is at X=3000, so active monitor starts at 3000 - activeMonitorW / 2
-                    // and ends at 3000 + activeMonitorW / 2.
+                    // window center is at X=getGhostCenter().x, so the active monitor starts at
+                    // getGhostCenter().x - activeMonitorW / 2 and ends at getGhostCenter().x + activeMonitorW / 2.
                     const activeMonitorW = displayBounds?.width ?? screenBounds?.width ?? window.innerWidth;
                     const activeMonitorH = displayBounds?.height ?? screenBounds?.height ?? window.innerHeight;
-                    visibleLeft = 3000 - activeMonitorW / 2;
-                    visibleRight = 3000 + activeMonitorW / 2;
+                    visibleLeft = getGhostCenter().x - activeMonitorW / 2;
+                    visibleRight = getGhostCenter().x + activeMonitorW / 2;
                     visibleTop = 0;
                     visibleBottom = activeMonitorH;
-                    activeScreenCenter = 3000;
+                    activeScreenCenter = getGhostCenter().x;
                     activeScreenCenterY = activeMonitorH / 2;
                 }
 
@@ -630,92 +545,10 @@ const Sidebar: React.FC = () => {
                     />
                 </div>
 
-                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
+<div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
-                {/* 1b. Scrollable Container for Features */}
-                <div 
-                    ref={scrollRef}
-                    onMouseDown={handleScrollMouseDown}
-                    className={`flex ${orientation === 'horizontal' ? 'flex-row h-full w-fit overflow-x-hidden' : 'flex-col w-full h-fit overflow-y-hidden'} items-center custom-scrollbar`} 
-                >
-                    <div className={`${orientation === 'horizontal' ? 'h-full flex-row px-1.5' : 'w-full flex-col py-1.5'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
-                    {/* Dynamic Feature Order with Separators */}
-                    {(() => {
-                        const dynamicButtons = extensionsRegistry.getButtons();
-                        const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
-                        
-                        const allExts = [...dynamicButtons, ...dynamicInlineWidgets];
 
-                        // Ensure missing plugins are added to featureOrder implicitly (so they show at the end)
-                        const missing = allExts.map(e => e.id).filter(id => !featureOrder.includes(id));
-                        if (missing.length > 0) {
-                            setTimeout(() => setFeatureOrder([...featureOrder, ...missing]), 0);
-                        }
-
-                        // Sort all plugins according to featureOrder
-                        const sortedFeatures = [...allExts].sort((a, b) => {
-                            const idxA = featureOrder.indexOf(a.id);
-                            const idxB = featureOrder.indexOf(b.id);
-                            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                            if (idxA !== -1 && idxB === -1) return -1;
-                            if (idxA === -1 && idxB !== -1) return 1;
-                            return 0;
-                        });
-
-                        return sortedFeatures.map((feat: any, idx) => {
-                            const isWidget = !!feat.render;
-                            const id = feat.id;
-                            const isDragOver = dragOverId === id;
-                            
-                            return (
-                                <React.Fragment key={id}>
-                                    <div 
-                                        draggable={reorderMode}
-                                        onDragStart={(e) => onPluginDragStart(e, id)}
-                                        onDragOver={(e) => onPluginDragOver(e, id)}
-                                        onDrop={(e) => onPluginDrop(e, id)}
-                                        onDragLeave={() => setDragOverId(null)}
-                                        onMouseDown={handlePluginMouseDown}
-                                        onMouseUp={handlePluginMouseUp}
-                                        onMouseLeave={handlePluginMouseUp}
-                                        className={`w-full flex justify-center no-drag-region transition-all ${reorderMode ? 'cursor-grab hover:scale-105 active:cursor-grabbing' : ''} ${reorderMode && !isDragScrolling ? 'animate-pulse' : ''}`}
-                                        style={{ 
-                                            transform: isDragOver ? (orientation === 'horizontal' ? 'translateX(10px)' : 'translateY(10px)') : 'none',
-                                            opacity: isDragOver ? 0.5 : 1
-                                        }}
-                                    >
-                                        {isWidget ? (
-                                            feat.render()
-                                        ) : (
-                                            <TooltipButton
-                                                label={reorderMode ? (t('dragToReorder' as any) || 'Drag to reorder') : feat.label}
-                                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg
-                                                    ${!reorderMode ? 'hover:scale-110 active:scale-95' : ''}
-                                                    ${activeExtensionPanelId === id ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
-                                                style={{ borderWidth: activeExtensionPanelId === id ? '1px' : '0px', pointerEvents: reorderMode ? 'none' : 'auto' }}
-                                                onClick={(e) => {
-                                                    if (reorderMode) return;
-                                                    const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
-                                                    feat.onClick(e as any, rect);
-                                                }}
-                                            >
-                                                <span className="material-symbols-outlined text-[24px]">{feat.icon}</span>
-                                            </TooltipButton>
-                                        )}
-                                    </div>
-                                    {(idx < sortedFeatures.length - 1) && (
-                                        <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
-                                    )}
-                                </React.Fragment>
-                            );
-                        });
-                    })()}
-                    </div>
-                </div> {/* End scrollable container */}
-
-                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
-
-                {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
+               {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
                 <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-0' : 'px-2 pb-0'}`}>
                     <div style={{ zoom: iconScale }} className="transition-all">
                         <TooltipButton

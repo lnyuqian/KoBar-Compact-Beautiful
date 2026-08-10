@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
-  <img src="https://img.shields.io/badge/version-1.1.0-f4a125?style=flat" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.1.2-f4a125?style=flat" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
@@ -26,7 +26,7 @@
 
 Visit our website: [KoBar.org](https://kobar.org/)
 
-Think of it as a Swiss Army knife that floats on your desktop. With its new **plugin-based architecture**, you can customize KoBar with exactly the tools you need—clipboard managers, AI assistants, screenshot studios, media controllers, and more—all in one sleek, customizable sidebar.
+Think of it as a Swiss Army knife that floats on your desktop. KoBar keeps notes, snippets, clipboard history, media controls, screenshots and more just one click away.
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=KfZmoITxg2E">
@@ -40,9 +40,7 @@ Think of it as a Swiss Army knife that floats on your desktop. With its new **pl
 
 ---
 
-## ✨ Core Features & The Plugin Ecosystem
-
-KoBar has evolved into a powerful **Plugin-Based Architecture**. Instead of a monolithic application, KoBar provides a lightweight, modular core, giving you complete freedom to install only the tools you need or even build your own!
+## ✨ Core Features
 
 ### 🔲 Modular Core (Built-in)
 - **Always-on-top** transparent overlay — never leaves your sight.
@@ -51,101 +49,26 @@ KoBar has evolved into a powerful **Plugin-Based Architecture**. Instead of a mo
 - **Free-floating mode** — drag the sidebar anywhere on the screen, across multiple monitors.
 - **Multi-monitor support** — seamless edge detection and snapping across all connected displays.
 
-### 🧩 Official Plugins
-Extend KoBar by installing plugins from the community or the core team. Here is the growing list of official plugins maintained by the KoBar Project:
 
-- 🤖 **[AI Hub](https://github.com/Kobar-Project/AI-Hub-plugin)**: Multi-provider AI assistant supporting OpenAI, Gemini, Claude, and local LLMs.
-- 📋 **[Clipboard Manager](https://github.com/Kobar-Project/Clipboard-Manager-plugin)**: Multi-slot sequential clipboard (FIFO queue) with image support.
-- 📝 **[Snippet Vault (Notes)](https://github.com/Kobar-Project/SnippetVault-plugin)**: Save and organize text templates, code snippets, and AI prompts.
-- 📸 **[Screenshot Studio](https://github.com/Kobar-Project/Screenshot-plugin)**: Region & full-screen capture with a built-in annotation editor.
-- 🎵 **[KoPlayer](https://github.com/Kobar-Project/KoPlayer-plugin)**: System media controller (Spotify, YouTube, etc.) with album art.
-- 📅 **[KoCalendar](https://github.com/Kobar-Project/KoCalendar-plugin)**: Google Calendar integration and event alerts.
-- ⏱️ **[Focus Mode](https://github.com/Kobar-Project/Focus-Mode-plugin)**: Customizable timer with ambient melodies.
-- 🔢 **[Calculator](https://github.com/Kobar-Project/Calculator-plugin)**: Floating scientific calculator with history.
-- 🎨 **[Color Picker](https://github.com/Kobar-Project/Color-Picker-plugin)**: Pick colors anywhere on your screen with HEX/RGB/HSL values.
-- 📦 **[KoBox](https://github.com/Kobar-Project/KoBox-plugin)**: Drag-and-drop file staging area with auto-cleanup.
-- 📌 **[PinWindowToTop](https://github.com/Kobar-Project/PinWindowToTop-plugin)**: Pin any third-party window to "Always on Top".
-- 🚀 **[Shortcuts](https://github.com/Kobar-Project/Shortcuts-plugin)**: Quick app launcher and shortcut manager.
-- ✅ **[ToDo List](https://github.com/Kobar-Project/ToDoList-plugin)**: Minimal, draggable task list with priority ordering.
+## 🛠 Maintenance & Optimizations
 
----
+This fork removes the plugin system and ships the built-in core as a self-contained sidebar. The following improvements were applied:
 
-## 🧩 KoBar Plugins Registry
+- **Privacy-first clipboard**: new **Clipboard Monitoring** toggle in Settings stops the main-process clipboard polling entirely when disabled.
+- **Lower CPU usage**: click-through hit-testing is coalesced with `requestAnimationFrame` (one `elementFromPoint` per frame instead of per mousemove).
+- **Smaller window footprint**: the transparent ghost window is sized to the union of all displays instead of a fixed 6000×4000, cutting GPU/compositor cost.
+- **Faster startup & caching**: vendor libraries are split into stable chunks; the runtime Tailwind compiler was removed (build-time Tailwind covers all classes).
+- **Better error feedback**: clipboard copy and note export failures now raise a desktop notification instead of failing silently.
+- **Cleaner codebase**: main-process geometry, clipboard and tray logic extracted into dedicated modules; ghost-window magic numbers replaced by named constants.
 
-Welcome to the official Plugin Registry for [KoBar](https://github.com/Kobar-Project/KoBar)! 
+### Development
 
-This repository serves as the central database for all community-created plugins available in the KoBar marketplace. The registry is fully automated and powered by GitHub Actions.
-
-### ⚙️ How It Works
-
-1. **Source of Truth:** Developers submit their GitHub repository names to the `plugins.json` file in this repository.
-2. **Automated Bot:** A GitHub Action runs automatically every midnight (or when a new PR is merged).
-3. **Data Fetching:** The bot visits every registered repository, reads their `kobar.json` metadata file, and fetches the latest version and release notes from the GitHub Releases API.
-4. **Registry Generation:** The bot compiles all this data and generates a single `registry.json` file.
-5. **Client App:** The KoBar desktop application downloads this lightweight `registry.json` file to instantly display the most up-to-date plugins to users without hitting API rate limits.
-
-### 🚀 How to Submit Your Plugin
-
-If you have developed a plugin for KoBar and want it to appear in the official Plugin Store, follow these simple steps:
-
-#### Step 1: Add a Manifest to Your Repository
-Ensure your plugin's repository has a `kobar.json` (or `manifest.json`) file in its root directory. This file provides the store with your plugin's display information.
-
-**Example `kobar.json`:**
-```json
-{
-  "id": "my-awesome-plugin",
-  "name": "Awesome Plugin",
-  "description": "This plugin does amazing things for KoBar.",
-  "version": "1.0.0",
-  "versionNote": "Updated plugin images.",
-  "author": "YourName",
-  "entry": "index.js",
-  "isBeta": false,
-  "githubRepo": "your-name/your-plugin",
-  "icon": "library_books",
-  "image": "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png",
-  "storeImage": [
-    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png1",
-    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png2",
-    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png3"
-  ],
-  "categories": ["Utility", "Productivity"],
-  "languages": ["en", "tr", "de"]
-}
+```bash
+npm install
+npm run dev      # Vite + Electron dev mode
+npm run build   # TypeScript + Vite production build
+npm run lint    # ESLint
 ```
-*(Note: You do not need to specify the `version` here. The bot automatically fetches the version number and release notes from your latest GitHub Release!)*
-
-#### Step 2: Create a GitHub Release
-Make sure you have created at least one **Release** on your GitHub repository (e.g., `v1.0.0`) and attached your plugin's `.zip` file to it.
-
-#### Step 3: Fork and Update `plugins.json`
-1. Fork the [kobar-plugins-registry](https://github.com/Kobar-Project/kobar-plugins-registry) repository.
-2. Open the `plugins.json` file.
-3. Add your repository path (`Username/RepositoryName`) to the array.
-
-#### Step 4: Open a Pull Request
-Submit a Pull Request (PR) to the registry repository. Once the KoBar team reviews and merges your PR, the bot will automatically index your plugin, and it will appear in the KoBar app within a few minutes!
-
----
-
-## 🪄 Vibe Coding: Build Plugins with AI
-
-You don't need to be an expert developer to build a KoBar plugin. KoBar officially supports **Vibe Coding**!
-
-Inside the `for-agents` directory of this repository, you will find specialized **Agent Skills** (e.g., `kobar-plugin-developer/SKILL.md`). These files contain all the architectural rules, API constraints, and UI guidelines needed to build a plugin.
-
-**How to vibe code a plugin:**
-1. Open the KoBar project in an AI-powered IDE (like Cursor, Windsurf) or use an agentic coding assistant (like Cline, Roo, or Antigravity).
-2. Tell the AI: *"I want to create a new KoBar plugin that does [YOUR IDEA]. Please read the `for-agents/kobar-plugin-developer/SKILL.md` file first to learn the rules."*
-3. The AI will read the guidelines and automatically write the code for you inside the local `pluginsPlayground` folder.
-4. Open the KoBar app, and your new plugin will be running instantly for testing!
-
-<p align="center">
-  <img src="Assets/GitHub_images/AI-hub.png" alt="Theming and AI Hub" width="100%" />
-</p>
-
----
 
 ## 🎨 Theming & Design
 
@@ -194,25 +117,24 @@ KoBar/
 │   └── licenseManager.cts  # Hardware ID & license validation
 ├── src/                    # React Frontend (Renderer Process)
 │   ├── App.tsx             # Root component & layout orchestration
+│   ├── main.tsx            # React entry point (renderer bootstrap)
 │   ├── components/
-│   │   ├── core/           # Sidebar layout, Window Controls
-│   │   ├── plugins/        # Plugin Manager UI and rendering engine
-│   │   └── license/        # LicenseActivationModal
+│   │   ├── layout/         # Sidebar, FloatingEye, PipPlayer, TooltipButton
+│   │   ├── notes/          # NotePanel, NoteEditor, MarkdownEditor, SettingsPanel
+│   │   ├── license/        # LicenseActivationModal
+│   │   └── tutorial/       # TutorialManager
 │   ├── store/              # Zustand state management
-│   │   ├── useAppStore.ts          # Main application state (~58KB)
-│   │   └── usePluginStore.ts       # Plugin registry and management state
+│   │   └── useAppStore.ts          # Main application state (persisted)
 │   ├── hooks/              # Custom React hooks
-│   │   ├── useSpeechToText.ts      # Web Speech API integration
 │   │   └── useUnifiedResize.ts     # Cross-platform panel resizing
 │   ├── i18n/               # Translations (10 languages)
 │   ├── types/              # TypeScript definitions (global.d.ts)
 │   └── config/             # Default state & clipboard configs
 ├── Assets/                 # Static resources
+│   ├── GitHub_images/      # README & store images
 │   ├── Melody/             # Focus mode ambient audio files
-│   ├── DefaultNote/        # Default note templates
-│   └── microsoftStore/     # Store listing assets (10 languages)
+│   └── notes/              # Default note templates
 └── build/                  # App icons & build resources
-```
 
 ### Key Architectural Decisions
 

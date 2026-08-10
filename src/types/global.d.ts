@@ -10,6 +10,9 @@ declare global {
     }
 
     interface Window {
+        React: any;
+        ReactDOM: any;
+        useAppStore: any;
         api: {
             hideApp: () => void;
             quitApp: () => void;
@@ -42,6 +45,7 @@ declare global {
             moveWindow: (dx: number, dy: number) => void;
             recenterWindowOnWidget: (x: number, y: number, width: number, height: number) => Promise<{ x: number; y: number; displayBounds: any } | null>;
             getWindowPositionSync: () => [number, number];
+            getGhostCenterSync: () => { x: number; y: number };
             // Native App Launcher
             getFileIcon: (path: string) => Promise<string | null>;
             launchFile: (path: string) => void;
@@ -126,17 +130,6 @@ declare global {
             getAppVersion: () => Promise<string>;
             isDev: () => Promise<boolean>;
 
-            // Extensions API
-            getInstalledExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; enabled: boolean; code?: string; image?: string; categories?: string[]; versionNote?: string; githubRepo?: string }>>;
-            checkPluginUpdates: () => Promise<Array<{ id: string; name: string; currentVersion: string; latestVersion: string; releaseNotes: string; repo: string }>>;
-            getAvailableExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; downloadUrl: string }>>;
-            installExtension: (id: string) => Promise<boolean>;
-            uninstallExtension: (id: string) => Promise<boolean>;
-            toggleExtensionEnabled: (id: string, enabled: boolean) => Promise<boolean>;
-            installExtensionFromFile: () => Promise<{ success: boolean; reason?: string }>;
-            installExtensionFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string }>;
-            installExtensionFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string }>;
-            onPluginInstallProgress: (callback: (id: string, percent: number) => void) => () => void;
         };
     }
 }

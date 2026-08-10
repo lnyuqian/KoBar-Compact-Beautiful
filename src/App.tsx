@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import '@tailwindcss/browser';
 import './index.css';
 import { useAppStore } from './store/useAppStore';
 import Sidebar from './components/layout/Sidebar';
@@ -15,9 +14,6 @@ import LicenseActivationModal from './components/license/LicenseActivationModal'
 import TutorialManager from './components/tutorial/TutorialManager';
 
 
-
-
-import { useExtensionRegistry } from './components/extensions/extensionRegistry';
 
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
@@ -88,12 +84,8 @@ const App: React.FC = () => {
 
   const customThemeColor = useAppStore(state => state.customThemeColor);
 
-  const isHydrated = useAppStore(state => state.isHydrated);
-
-  const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
-  const activeExtensionAnchorRect = useAppStore(state => state.activeExtensionAnchorRect);
-  const extensionReloadTrigger = useAppStore(state => state.extensionReloadTrigger);
-  const extensionsRegistry = useExtensionRegistry();
+ const isHydrated = useAppStore(state => state.isHydrated);
+  const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
 
   // Apply persisted theme/design on mount
   useEffect(() => {
@@ -148,68 +140,19 @@ const App: React.FC = () => {
       root.style.setProperty('--theme-scrollbar', hslToHex(h, Math.min(s, 30), 22));
       root.style.setProperty('--theme-marker', color);
     }
-  }, [theme, design, customThemeColor, isHydrated]);
+}, [theme, design, customThemeColor, isHydrated]);
 
-  // Load dynamic extensions
+  // Clipboard privacy: sync the monitoring toggle with the main-process listener
   useEffect(() => {
     if (!isHydrated) return;
-
-    if (window.api?.getInstalledExtensions) {
-      // Suspend UI updates during the reload process
-      (window.KoBarExtensions as any)?.suspendNotifications?.();
-      
-      window.api.getInstalledExtensions().then(exts => {
-        // Clear old extensions state right before injecting new ones
-        window.KoBarExtensions?.clear();
-        const oldScripts = document.querySelectorAll('script[data-extension-id]');
-        oldScripts.forEach(s => s.remove());
-
-        const promises = exts.map(ext => {
-          if (ext.enabled && ext.code) {
-            return new Promise<void>((resolve) => {
-              try {
-                window.KoBarExtensions?.registerManifest?.(ext.id, ext);
-                const blob = new Blob([`(() => {\n${ext.code}\n})();`], { type: 'application/javascript' });
-                const url = URL.createObjectURL(blob);
-                const script = document.createElement('script');
-                script.src = url;
-                script.dataset.extensionId = ext.id;
-                script.onload = () => {
-                  URL.revokeObjectURL(url);
-                  resolve();
-                };
-                script.onerror = () => {
-                  URL.revokeObjectURL(url);
-                  console.error(`Failed to load extension script ${ext.id}`);
-                  resolve();
-                };
-                document.head.appendChild(script);
-              } catch (err) {
-                console.error(`Failed to inject extension ${ext.id}:`, err);
-                resolve();
-              }
-            });
-          }
-          return Promise.resolve();
-        });
-
-        Promise.all(promises).then(() => {
-          // Resume notifications after all scripts have executed
-          (window.KoBarExtensions as any)?.resumeNotifications?.();
-        });
-      }).catch(err => {
-        console.error('Failed to query extensions:', err);
-        (window.KoBarExtensions as any)?.resumeNotifications?.();
-      });
+    if (clipboardMonitoring) {
+      window.api?.startClipboardListener?.();
+    } else {
+      window.api?.stopClipboardListener?.();
     }
+  }, [isHydrated, clipboardMonitoring]);
 
-    return () => {
-      // Intentionally avoiding removing scripts on unmount if it's just a re-render.
-      // The reload trigger handles cleanup explicitly above.
-    };
-  }, [isHydrated, extensionReloadTrigger]);
-
-  // KoBox cleanup triggers
+// KoBox cleanup triggers
   useEffect(() => {
     window.api?.cleanKoBox?.(useAppStore.getState().koBoxCleanupMode);
 
@@ -265,7 +208,8 @@ const App: React.FC = () => {
         const visibleHeight = screenBounds?.height ?? 800;
         const isMac = useAppStore.getState().isMac;
         // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
-        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : 3000, y: Math.floor(visibleHeight / 2) });
+        const ghostCenterX = window.api?.getGhostCenterSync?.().x ?? Math.floor(window.innerWidth / 2);
+        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : ghostCenterX, y: Math.floor(visibleHeight / 2) });
       }));
     }
     if (window.api?.onResetUiPosition) {
@@ -320,43 +264,48 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Persist tracking across any possible re-renders without falling out of scope
-  const lastIgnoreState = useRef<boolean | null>(null);
+ // Persist tracking across any possible re-renders without falling out of scope
+ const lastIgnoreState = useRef<boolean | null>(null);
+  // rAF coalescing: elementFromPoint is expensive, so run it at most once per frame
+  const rafPending = useRef(false);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
-      // Do not allow the OS to steal the mouseup event through the ghost window.
-      if (isResizingGlobal) {
-        if (lastIgnoreState.current !== false) {
-          window.api?.setIgnoreMouseEvents(false);
-          lastIgnoreState.current = false;
-        }
-        return;
-      }
+ useEffect(() => {
+   const handleMouseMove = (e: MouseEvent) => {
+     lastMouseX = e.clientX;
+     lastMouseY = e.clientY;
+     // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
+     // Do not allow the OS to steal the mouseup event through the ghost window.
+     if (isResizingGlobal) {
+       if (lastIgnoreState.current !== false) {
+         window.api?.setIgnoreMouseEvents(false);
+         lastIgnoreState.current = false;
+       }
+       return;
+     }
 
-      const target = e.target as HTMLElement;
-      
-      // If the target or any of its parents has pointer-events-auto, it is a solid UI element.
-      // Otherwise, we consider it a transparent part of the ghost window.
-      const isSolid = target.closest('.pointer-events-auto') !== null;
-      const isTransparent = !isSolid;
-
-      // IPC Flood Protection: Only trigger Electron main process communication linearly on pure state boundary crossings
-      if (isTransparent !== lastIgnoreState.current) {
-        const isMacLocal = useAppStore.getState().isMac;
-        if (isMacLocal) {
-          requestAnimationFrame(() => {
+      if (rafPending.current) return;
+      rafPending.current = true;
+      requestAnimationFrame(() => {
+        rafPending.current = false;
+        const el = document.elementFromPoint(lastMouseX, lastMouseY);
+        // If the target or any of its parents has pointer-events-auto, it is a solid UI element.
+        // Otherwise, we consider it a transparent part of the ghost window.
+        const isSolid = el ? el.closest('.pointer-events-auto') !== null : false;
+        const isTransparent = !isSolid;
+        // IPC Flood Protection: Only trigger main-process communication on pure state boundary crossings
+        if (isTransparent !== lastIgnoreState.current) {
+          const isMacLocal = useAppStore.getState().isMac;
+          if (isMacLocal) {
+            requestAnimationFrame(() => {
+              window.api?.setIgnoreMouseEvents(isTransparent);
+            });
+          } else {
             window.api?.setIgnoreMouseEvents(isTransparent);
-          });
-        } else {
-          window.api?.setIgnoreMouseEvents(isTransparent);
+          }
+          lastIgnoreState.current = isTransparent;
         }
-        lastIgnoreState.current = isTransparent;
-      }
-    };
+      });
+   };
     
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
@@ -422,26 +371,6 @@ const App: React.FC = () => {
                   <NotePanel />
                 </div>
               )}
-
-              {/* Context-bound Popups */}
-
-
-
-
-
-
-
-
-              
-              {/* Dynamic Extensions Popups */}
-              {activeExtensionPanelId && isLicensed && (() => {
-                const panel = extensionsRegistry.getPanel(activeExtensionPanelId);
-                if (!panel) return null;
-                return panel.render({
-                  onClose: () => useAppStore.setState({ activeExtensionPanelId: null }),
-                  anchorRect: activeExtensionAnchorRect
-                });
-              })()}
 
             </>
           )}

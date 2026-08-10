@@ -121,7 +121,6 @@ export interface WorkspaceConfig {
     customThemeColor: string;
     design: 'style1' | 'style2';
     glassOpacity: number;
-    featureOrder: string[];
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
     isPopupSmartPositioning: boolean;
     enableEyeAnimation: boolean;
@@ -250,14 +249,6 @@ interface AppState {
 
 
 
-    featureOrder: string[];
-    setFeatureOrder: (order: string[]) => void;
-
-    settingsFeatureViewMode: 'list' | 'cards';
-    setSettingsFeatureViewMode: (mode: 'list' | 'cards') => void;
-    settingsWorkspaceViewMode: 'list' | 'cards';
-    setSettingsWorkspaceViewMode: (mode: 'list' | 'cards') => void;
-
     // UI Spacing & Sizing
     toggleWidth: number;
     setToggleWidth: (val: number) => void;
@@ -277,6 +268,9 @@ interface AppState {
     setLaunchAtStartup: (val: boolean) => void;
     enableEyeAnimation: boolean;
     setEnableEyeAnimation: (val: boolean) => void;
+    // Clipboard privacy: when false, the main process stops reading the clipboard
+    clipboardMonitoring: boolean;
+    setClipboardMonitoring: (val: boolean) => void;
     // Language
     language: LanguageCode;
     setLanguage: (lang: LanguageCode) => void;
@@ -295,15 +289,6 @@ interface AppState {
     // Scroll Memory (volatile)
     scrollPositions: Record<string, number>;
     setScrollPosition: (key: string, pos: number) => void;
-    // Helper to enforce exclusivity
-    closeAllUtilityPopups: () => void;
-
-    // Dynamic Extensions State
-    activeExtensionPanelId: string | null;
-    activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    extensionReloadTrigger: number;
-    triggerExtensionReload: () => void;
-
     // Workspaces
     workspaces: WorkspaceConfig[];
     saveCurrentAsWorkspace: (name: string) => void;
@@ -357,15 +342,6 @@ export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
-            closeAllUtilityPopups: () => set({
-
-
-                activeExtensionPanelId: null
-            }),
-            activeExtensionPanelId: null,
-            activeExtensionAnchorRect: null,
-            extensionReloadTrigger: 0,
-            triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
             orientation: 'vertical',
@@ -477,14 +453,6 @@ export const useAppStore = create<AppState>()(
 
 
 
-            featureOrder: ['com.kobar.aihub.btn', 'ko-calender-plugin-btn', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'],
-            setFeatureOrder: (order) => set({ featureOrder: order }),
-
-            settingsFeatureViewMode: 'cards',
-            setSettingsFeatureViewMode: (mode) => set({ settingsFeatureViewMode: mode }),
-            settingsWorkspaceViewMode: 'cards',
-            setSettingsWorkspaceViewMode: (mode) => set({ settingsWorkspaceViewMode: mode }),
-
             // UI Spacing & Sizing (defaults)
             toggleWidth: 22, // Note Notch Protrusion
             setToggleWidth: (val) => set({ toggleWidth: val }),
@@ -506,6 +474,8 @@ export const useAppStore = create<AppState>()(
             enableEyeAnimation: true,
             setEnableEyeAnimation: (val) => set({ enableEyeAnimation: val }),
 
+            clipboardMonitoring: true,
+            setClipboardMonitoring: (val) => set({ clipboardMonitoring: val }),
             // Language
             language: 'en',
             setLanguage: (language) => set({ language }),
@@ -731,7 +701,6 @@ export const useAppStore = create<AppState>()(
                     customThemeColor: state.customThemeColor,
                     design: state.design,
                     glassOpacity: state.glassOpacity,
-                    featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
                     enableEyeAnimation: state.enableEyeAnimation,
@@ -767,7 +736,6 @@ export const useAppStore = create<AppState>()(
                     customThemeColor: ws.customThemeColor || state.customThemeColor,
                     design: ws.design,
                     glassOpacity: ws.glassOpacity,
-                    featureOrder: [...ws.featureOrder],
                     edgePosition: ws.edgePosition,
                     isPopupSmartPositioning: ws.isPopupSmartPositioning || false,
                     enableEyeAnimation: ws.enableEyeAnimation !== undefined ? ws.enableEyeAnimation : true,
@@ -801,7 +769,6 @@ export const useAppStore = create<AppState>()(
                     customThemeColor: state.customThemeColor,
                     design: state.design,
                     glassOpacity: state.glassOpacity,
-                    featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
                     enableEyeAnimation: state.enableEyeAnimation,
                     orientation: state.orientation
@@ -879,65 +846,31 @@ export const useAppStore = create<AppState>()(
                         persistedState.workspaces = [];
                     }
                 }
-                if (version === 0) {
-                    // Ensure 'calculator' is in the order if it's missing
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('calculator')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'calculator'];
-                    }
-                    // Ensure it's enabled by default if not set
 
-                }
 
-                // version 1 migration for colorpicker
-                if (version <= 1) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobar-colorpicker-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'kobar-colorpicker-plugin-btn'];
-                    }
-                }
 
-                if (persistedState.featureOrder) {
-                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'colorpicker' ? 'kobar-colorpicker-plugin-btn' : f);
-                }
 
                 delete persistedState.isColorPickerEnabled;
                 delete persistedState.colorPalettes;
                 delete persistedState.currentColor;
 
-                // version 2 migration for todolist
-                if (version <= 2) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('todolist-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'todolist-plugin-btn'];
-                    }
-                }
 
-                if (persistedState.featureOrder) {
-                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'todolist' ? 'todolist-plugin-btn' : f);
-                }
 
                 delete persistedState.isTodoListEnabled;
                 delete persistedState.todos;
 
                 // version 3 migration for pininjector
                 if (version <= 3) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('pininjector')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'pininjector'];
-                    }
                     if (persistedState.isPinInjectorEnabled === undefined) {
                         persistedState.isPinInjectorEnabled = true;
                     }
                 }
 
-                if (persistedState.featureOrder && !persistedState.featureOrder.includes('ko-calender-plugin-btn')) {
-                    persistedState.featureOrder = [...persistedState.featureOrder, 'ko-calender-plugin-btn'];
-                }
 
 
 
                 // version 4 migration for kobox
                 if (version <= 4) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobox')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'kobox'];
-                    }
                     if (persistedState.isKoBoxEnabled === undefined) {
                         persistedState.isKoBoxEnabled = true;
                     }
@@ -948,9 +881,6 @@ export const useAppStore = create<AppState>()(
 
                 // version 5/6 migration for snippetvault
                 if (version <= 5) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('snippetvault-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'snippetvault-plugin-btn'];
-                    }
                     if (persistedState.isSnippetVaultEnabled === undefined) {
                         persistedState.isSnippetVaultEnabled = true;
                     }
@@ -979,20 +909,6 @@ export const useAppStore = create<AppState>()(
                     }
                 }
 
-                // AI hub migration
-                if (version <= 6) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('com.kobar.aihub.btn')) {
-                        // Force it to be the first item
-                        persistedState.featureOrder = ['com.kobar.aihub.btn', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub' && f !== 'com.kobar.aihub.btn')];
-                    }
-                    if (persistedState.isAiHubEnabled === undefined) {
-                        persistedState.isAiHubEnabled = true;
-                    }
-                    // Final sanity check for featureOrder array
-                    if (!persistedState.featureOrder) {
-                        persistedState.featureOrder = ['com.kobar.aihub.btn', 'copypaste', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
-                    }
-                }
 
                 // version 16 migration for custom theme
                 if (version <= 15) {
@@ -1021,6 +937,7 @@ export const useAppStore = create<AppState>()(
                 teleportShortcut: state.teleportShortcut,
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
+                clipboardMonitoring: state.clipboardMonitoring,
 
 
 
@@ -1036,7 +953,6 @@ export const useAppStore = create<AppState>()(
 
 
 
-                featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
 
@@ -1047,8 +963,6 @@ export const useAppStore = create<AppState>()(
 
                 workspaces: state.workspaces,
 
-                settingsFeatureViewMode: state.settingsFeatureViewMode,
-                settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
                 edgePosition: state.edgePosition,
             }),

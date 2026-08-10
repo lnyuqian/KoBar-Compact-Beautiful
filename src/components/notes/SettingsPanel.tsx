@@ -75,6 +75,8 @@ const SettingsPanel: React.FC = () => {
     const launchAtStartup = useAppStore(state => state.launchAtStartup);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
+    const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
+    const setClipboardMonitoring = useAppStore(state => state.setClipboardMonitoring);
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const setToggleWidth = useAppStore(state => state.setToggleWidth);
@@ -371,14 +373,11 @@ const SettingsPanel: React.FC = () => {
 
                 koBoxCleanupMode: state.koBoxCleanupMode,
 
-                featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
 
 
                 workspaces: state.workspaces,
-                settingsFeatureViewMode: state.settingsFeatureViewMode,
-                settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
                 edgePosition: state.edgePosition,
             };
@@ -851,6 +850,22 @@ const SettingsPanel: React.FC = () => {
                             </button>
                         </div>
 
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-slate-400 text-[20px]">content_copy</span>
+                                <span className="text-sm text-slate-300">{t('clipboardMonitoring') || 'Clipboard Monitoring'}</span>
+                            </div>
+                            <button
+                                onClick={() => setClipboardMonitoring(!clipboardMonitoring)}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region ${clipboardMonitoring ? 'bg-primary' : 'bg-slate-600'}`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${clipboardMonitoring ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </button>
+                        </div>
+
+                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
                         <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
 
                         <div className="flex items-center justify-between">

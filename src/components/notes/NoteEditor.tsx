@@ -62,6 +62,7 @@ const ParagraphWithCopy = Node.create({
                         document.body.removeChild(ta);
                     } catch (err) {
                         console.error('Copy failed:', err);
+                        window.api?.sendNotification?.('Copy Failed', 'Could not copy the paragraph text.');
                     }
                 };
                 if (window.api?.writeToClipboard) {
@@ -272,6 +273,7 @@ const NoteEditor: React.FC = React.memo(() => {
                     }
                 } catch (err) {
                     console.error('Error saving note:', err);
+                    window.api?.sendNotification?.('Export Failed', 'An unexpected error occurred while saving the note.');
                 }
             }
         };
