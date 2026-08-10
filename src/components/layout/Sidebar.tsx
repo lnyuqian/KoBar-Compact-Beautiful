@@ -9,6 +9,12 @@ import { CartoonEye } from './MaskIcon';
 import EyeNotification from './EyeNotification';
 import dragIcon from '../../assets/icons/drag.svg';
 
+// Must stay in sync with the main-process ghost window geometry (electron/main.cts).
+const GHOST_WINDOW_WIDTH = 6000;
+const GHOST_WINDOW_HEIGHT = 4000;
+const GHOST_WINDOW_CENTER_X = GHOST_WINDOW_WIDTH / 2; // 3000
+const GHOST_WINDOW_CENTER_Y = GHOST_WINDOW_HEIGHT / 2; // 2000
+
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
     const edgePosition = useAppStore(state => state.edgePosition);
@@ -175,7 +181,7 @@ const Sidebar: React.FC = () => {
                 );
 
                 if (activeDisplay) {
-                    const windowWidth = 6000;
+                    const windowWidth = GHOST_WINDOW_WIDTH;
                     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
                     const newWinY = activeDisplay.workArea.y;
 
@@ -245,8 +251,8 @@ const Sidebar: React.FC = () => {
                 const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
                 const physicalCurrentY = physicalOriginY + newY + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
-                let activeScreenPhysicalCenter = physicalOriginX + 3000; // Fallback to primary
-                let activeScreenPhysicalCenterY = physicalOriginY + 2000;
+                let activeScreenPhysicalCenter = physicalOriginX + GHOST_WINDOW_CENTER_X; // Fallback to primary
+                let activeScreenPhysicalCenterY = physicalOriginY + GHOST_WINDOW_CENTER_Y;
 
                 const activeMonitor = allDisplays.find(d => 
                     physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
@@ -324,15 +330,15 @@ const Sidebar: React.FC = () => {
                 } else {
                     // Since the window has been recentered on the active monitor, the active monitor's bounds
                     // relative to the window are simplified:
-                    // window center is at X=3000, so active monitor starts at 3000 - activeMonitorW / 2
-                    // and ends at 3000 + activeMonitorW / 2.
+                    // window center is at X=GHOST_WINDOW_CENTER_X, so the active monitor starts at
+                    // GHOST_WINDOW_CENTER_X - activeMonitorW / 2 and ends at GHOST_WINDOW_CENTER_X + activeMonitorW / 2.
                     const activeMonitorW = displayBounds?.width ?? screenBounds?.width ?? window.innerWidth;
                     const activeMonitorH = displayBounds?.height ?? screenBounds?.height ?? window.innerHeight;
-                    visibleLeft = 3000 - activeMonitorW / 2;
-                    visibleRight = 3000 + activeMonitorW / 2;
+                    visibleLeft = GHOST_WINDOW_CENTER_X - activeMonitorW / 2;
+                    visibleRight = GHOST_WINDOW_CENTER_X + activeMonitorW / 2;
                     visibleTop = 0;
                     visibleBottom = activeMonitorH;
-                    activeScreenCenter = 3000;
+                    activeScreenCenter = GHOST_WINDOW_CENTER_X;
                     activeScreenCenterY = activeMonitorH / 2;
                 }
 

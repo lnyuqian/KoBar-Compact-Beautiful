@@ -35,6 +35,19 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 
+// ─── Ghost Window Geometry Constants ─────────────────────────────────────
+// The invisible "ghost" window is much larger than the visible sidebar so the
+// transparent window can span a monitor and forward clicks via hit-testing.
+const GHOST_WINDOW_WIDTH = 6000;
+const GHOST_WINDOW_HEIGHT = 4000;
+// Initial visual sidebar rectangle; the renderer keeps it in sync via updateSidebarRect.
+const DEFAULT_SIDEBAR_RECT = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
+// The 80px bar is horizontally centered in the 6000px ghost window:
+// bar left edge = 6000/2 - 80/2 = 2960, bar center = 3000, bar right edge = 3040.
+const BAR_LEFT_OFFSET = GHOST_WINDOW_WIDTH / 2 - DEFAULT_SIDEBAR_RECT.width / 2;
+const BAR_CENTER_OFFSET = GHOST_WINDOW_WIDTH / 2;
+const BAR_RIGHT_OFFSET = GHOST_WINDOW_WIDTH / 2 + DEFAULT_SIDEBAR_RECT.width / 2;
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let clipboardPollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -45,7 +58,7 @@ let currentEdge: string = 'left';
 let psProcess: ChildProcess | null = null;
 let isGlobalPasteModeActive = false;
 let isAwaitingPinTarget = false;
-let sidebarRect = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
+let sidebarRect = { ...DEFAULT_SIDEBAR_RECT };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
@@ -106,7 +119,7 @@ function createWindow() {
     // The visual 80px Sidebar is horizontally centered within the 3400px container.
     // 3400/2 = 1700. The bar is from 1660 to 1740.
     // To dock the bar on the right edge by default: windowX + 3040 = rightEdge
-    const defaultX = primary.workArea.x + primary.workArea.width - 3040;
+    const defaultX = primary.workArea.x + primary.workArea.width - BAR_RIGHT_OFFSET;
     const defaultY = primary.workArea.y;
 
     let x = savedState?.x ?? defaultX;
@@ -117,7 +130,7 @@ function createWindow() {
     let isVisible = false;
     for (const display of displays) {
         const bounds = display.workArea;
-        const barLeft = x + 2960;
+        const barLeft = x + BAR_LEFT_OFFSET;
         const barRight = barLeft + 80;
         const barTop = y + 20;
 
@@ -141,8 +154,8 @@ function createWindow() {
     // Mac: use `bounds` (full screen incl. menu bar + Dock area) instead of `workArea`.
     // This prevents macOS from clipping the transparent window at the Dock boundary.
     const macScreen = isMac ? primary.bounds : primary.workArea;
-    const winWidth = isWin ? 6000 : macScreen.width;
-    const winHeight = isWin ? 4000 : macScreen.height;
+    const winWidth = isWin ? GHOST_WINDOW_WIDTH : macScreen.width;
+    const winHeight = isWin ? GHOST_WINDOW_HEIGHT : macScreen.height;
     const winX = isWin ? x : macScreen.x;
     const winY = isWin ? y : macScreen.y;
 
@@ -172,9 +185,9 @@ function createWindow() {
     });
 
     if (isWin) {
-        mainWindow.setMinimumSize(6000, 4000);
-        mainWindow.setMaximumSize(12000, 12000);
-        mainWindow.setSize(6000, 4000);
+        mainWindow.setMinimumSize(GHOST_WINDOW_WIDTH, GHOST_WINDOW_HEIGHT);
+        mainWindow.setMaximumSize(GHOST_WINDOW_WIDTH * 2, GHOST_WINDOW_HEIGHT * 3);
+        mainWindow.setSize(GHOST_WINDOW_WIDTH, GHOST_WINDOW_HEIGHT);
     } else if (isMac) {
         mainWindow.setMinimumSize(winWidth, winHeight);
         mainWindow.setSize(winWidth, winHeight);
@@ -330,7 +343,7 @@ function calculatePrimaryCenterPosition(): { x: number; y: number } {
     }
 
     // Center the 6000x4000 ghost window horizontally, clamp vertically to top
-    const windowWidth = 6000;
+    const windowWidth = GHOST_WINDOW_WIDTH;
 
     const x = Math.floor(wa.x + (wa.width / 2) - (windowWidth / 2));
     const y = wa.y;
@@ -1781,7 +1794,7 @@ ipcMain.handle('recenter-window-on-widget', async (event, relativeX, relativeY, 
     });
 
     // Calculate new centered window position
-    const windowWidth = 6000;
+    const windowWidth = GHOST_WINDOW_WIDTH;
     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
     const newWinY = activeDisplay.workArea.y;
 
@@ -1838,7 +1851,7 @@ ipcMain.on('register-teleport-shortcut', (event, shortcut) => {
                 // KoBar Sidebar is statically positioned at y=20 (pt-[20px]).
                 // We must use a targetVisualY close to 20 (e.g., 100) instead of half of height,
                 // otherwise restoring the window from the eye will place the sidebar off-screen.
-                const targetVisualX = 3000;
+                const targetVisualX = BAR_CENTER_OFFSET;
                 const targetVisualY = 100;
                 const newX = cursor.x - targetVisualX;
                 const newY = cursor.y - targetVisualY;
