@@ -86,7 +86,8 @@ const App: React.FC = () => {
 
   const customThemeColor = useAppStore(state => state.customThemeColor);
 
-  const isHydrated = useAppStore(state => state.isHydrated);
+ const isHydrated = useAppStore(state => state.isHydrated);
+  const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
 
   // Apply persisted theme/design on mount
   useEffect(() => {
@@ -141,10 +142,19 @@ const App: React.FC = () => {
       root.style.setProperty('--theme-scrollbar', hslToHex(h, Math.min(s, 30), 22));
       root.style.setProperty('--theme-marker', color);
     }
- }, [theme, design, customThemeColor, isHydrated]);
+}, [theme, design, customThemeColor, isHydrated]);
 
+  // Clipboard privacy: sync the monitoring toggle with the main-process listener
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (clipboardMonitoring) {
+      window.api?.startClipboardListener?.();
+    } else {
+      window.api?.stopClipboardListener?.();
+    }
+  }, [isHydrated, clipboardMonitoring]);
 
- // KoBox cleanup triggers
+// KoBox cleanup triggers
   useEffect(() => {
     window.api?.cleanKoBox?.(useAppStore.getState().koBoxCleanupMode);
 

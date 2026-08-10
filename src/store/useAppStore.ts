@@ -268,6 +268,9 @@ interface AppState {
     setLaunchAtStartup: (val: boolean) => void;
     enableEyeAnimation: boolean;
     setEnableEyeAnimation: (val: boolean) => void;
+    // Clipboard privacy: when false, the main process stops reading the clipboard
+    clipboardMonitoring: boolean;
+    setClipboardMonitoring: (val: boolean) => void;
     // Language
     language: LanguageCode;
     setLanguage: (lang: LanguageCode) => void;
@@ -471,6 +474,8 @@ export const useAppStore = create<AppState>()(
             enableEyeAnimation: true,
             setEnableEyeAnimation: (val) => set({ enableEyeAnimation: val }),
 
+            clipboardMonitoring: true,
+            setClipboardMonitoring: (val) => set({ clipboardMonitoring: val }),
             // Language
             language: 'en',
             setLanguage: (language) => set({ language }),
@@ -932,6 +937,7 @@ export const useAppStore = create<AppState>()(
                 teleportShortcut: state.teleportShortcut,
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
+                clipboardMonitoring: state.clipboardMonitoring,
 
 
 
