@@ -17,8 +17,6 @@ import TutorialManager from './components/tutorial/TutorialManager';
 
 
 
-import { useExtensionRegistry } from './components/extensions/extensionRegistry';
-
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
 export let isResizingGlobal = false;
@@ -90,11 +88,6 @@ const App: React.FC = () => {
 
   const isHydrated = useAppStore(state => state.isHydrated);
 
-  const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
-  const activeExtensionAnchorRect = useAppStore(state => state.activeExtensionAnchorRect);
-  const extensionReloadTrigger = useAppStore(state => state.extensionReloadTrigger);
-  const extensionsRegistry = useExtensionRegistry();
-
   // Apply persisted theme/design on mount
   useEffect(() => {
     if (!isHydrated) return; // Wait until store is ready from disk
@@ -148,68 +141,10 @@ const App: React.FC = () => {
       root.style.setProperty('--theme-scrollbar', hslToHex(h, Math.min(s, 30), 22));
       root.style.setProperty('--theme-marker', color);
     }
-  }, [theme, design, customThemeColor, isHydrated]);
+ }, [theme, design, customThemeColor, isHydrated]);
 
-  // Load dynamic extensions
-  useEffect(() => {
-    if (!isHydrated) return;
 
-    if (window.api?.getInstalledExtensions) {
-      // Suspend UI updates during the reload process
-      (window.KoBarExtensions as any)?.suspendNotifications?.();
-      
-      window.api.getInstalledExtensions().then(exts => {
-        // Clear old extensions state right before injecting new ones
-        window.KoBarExtensions?.clear();
-        const oldScripts = document.querySelectorAll('script[data-extension-id]');
-        oldScripts.forEach(s => s.remove());
-
-        const promises = exts.map(ext => {
-          if (ext.enabled && ext.code) {
-            return new Promise<void>((resolve) => {
-              try {
-                window.KoBarExtensions?.registerManifest?.(ext.id, ext);
-                const blob = new Blob([`(() => {\n${ext.code}\n})();`], { type: 'application/javascript' });
-                const url = URL.createObjectURL(blob);
-                const script = document.createElement('script');
-                script.src = url;
-                script.dataset.extensionId = ext.id;
-                script.onload = () => {
-                  URL.revokeObjectURL(url);
-                  resolve();
-                };
-                script.onerror = () => {
-                  URL.revokeObjectURL(url);
-                  console.error(`Failed to load extension script ${ext.id}`);
-                  resolve();
-                };
-                document.head.appendChild(script);
-              } catch (err) {
-                console.error(`Failed to inject extension ${ext.id}:`, err);
-                resolve();
-              }
-            });
-          }
-          return Promise.resolve();
-        });
-
-        Promise.all(promises).then(() => {
-          // Resume notifications after all scripts have executed
-          (window.KoBarExtensions as any)?.resumeNotifications?.();
-        });
-      }).catch(err => {
-        console.error('Failed to query extensions:', err);
-        (window.KoBarExtensions as any)?.resumeNotifications?.();
-      });
-    }
-
-    return () => {
-      // Intentionally avoiding removing scripts on unmount if it's just a re-render.
-      // The reload trigger handles cleanup explicitly above.
-    };
-  }, [isHydrated, extensionReloadTrigger]);
-
-  // KoBox cleanup triggers
+ // KoBox cleanup triggers
   useEffect(() => {
     window.api?.cleanKoBox?.(useAppStore.getState().koBoxCleanupMode);
 
@@ -422,26 +357,6 @@ const App: React.FC = () => {
                   <NotePanel />
                 </div>
               )}
-
-              {/* Context-bound Popups */}
-
-
-
-
-
-
-
-
-              
-              {/* Dynamic Extensions Popups */}
-              {activeExtensionPanelId && isLicensed && (() => {
-                const panel = extensionsRegistry.getPanel(activeExtensionPanelId);
-                if (!panel) return null;
-                return panel.render({
-                  onClose: () => useAppStore.setState({ activeExtensionPanelId: null }),
-                  anchorRect: activeExtensionAnchorRect
-                });
-              })()}
 
             </>
           )}

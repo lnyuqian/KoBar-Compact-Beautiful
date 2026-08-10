@@ -371,14 +371,11 @@ const SettingsPanel: React.FC = () => {
 
                 koBoxCleanupMode: state.koBoxCleanupMode,
 
-                featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
 
 
                 workspaces: state.workspaces,
-                settingsFeatureViewMode: state.settingsFeatureViewMode,
-                settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
                 edgePosition: state.edgePosition,
             };

@@ -143,8 +143,7 @@ const TutorialManager: React.FC = () => {
         setStep(1);
         clearTimers();
         
-        // Deactivate plugins, close note panel
-        useAppStore.setState({ activeExtensionPanelId: null });
+        // Close note panel
         setNotePanelOpen(false);
         
         showEyeNotification({
@@ -197,7 +196,7 @@ const TutorialManager: React.FC = () => {
         clearTimers();
         setIsHighlightingToggleNotes(false);
 
-        // Close settings/plugins if open, ensure a regular note is active
+        // Close settings if open, ensure a regular note is active
         const state = useAppStore.getState();
         const activeNote = state.notes.find(n => n.id === state.activeNoteId);
         
@@ -228,7 +227,7 @@ const TutorialManager: React.FC = () => {
         setStep(3);
         clearTimers();
         
-        // Ensure settings/plugins are closed
+        // Ensure settings are closed
         const state = useAppStore.getState();
         const aNote = state.notes.find(n => n.id === state.activeNoteId);
         if (aNote?.isSettings) {

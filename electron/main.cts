@@ -6,7 +6,7 @@ import { LicenseManager } from './licenseManager.cjs';
 import { autoUpdater } from 'electron-updater';
 import AdmZip from 'adm-zip';
 
-// ─── KoPlayer: Worker Thread Setup ────────────────────────────────
+// 鈹€鈹€鈹€ KoPlayer: Worker Thread Setup 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 import { Worker } from 'worker_threads';
 let smtcWorker: Worker | null = null;
 
@@ -60,7 +60,7 @@ let allPinnedHwnds: Set<number> = new Set();
 let mediaPollingInterval: ReturnType<typeof setInterval> | null = null;
 let lastMediaState = '';
 
-// Video PiP — background URL scan debounce
+// Video PiP 鈥?background URL scan debounce
 const BROWSER_APP_IDS = ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'];
 let lastVideoScanAt = 0;
 const VIDEO_SCAN_DEBOUNCE_MS = 5000;
@@ -132,7 +132,7 @@ function createWindow() {
     }
 
     if (!isVisible) {
-        // Saved position is off-screen — teleport to primary display after window creation
+        // Saved position is off-screen 鈥?teleport to primary display after window creation
         const safePos = calculatePrimaryCenterPosition();
         x = safePos.x;
         y = safePos.y;
@@ -194,7 +194,7 @@ function createWindow() {
         mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     }
 
-    // Edge detection — fires during drag for smooth real-time updates
+    // Edge detection 鈥?fires during drag for smooth real-time updates
     mainWindow.on('move', () => {
         if (isEyeDropperActive) return;
         handleWindowMove();
@@ -284,7 +284,7 @@ function handleWindowMove(force = false) {
     const [x, y] = mainWindow.getPosition();
     const [width] = mainWindow.getSize();
     // Judge the edge by the sidebar panel's REAL screen position (ghost window offset),
-    // not the 6000px-wide ghost window center (which is always ~3000 → always 'right').
+    // not the 6000px-wide ghost window center (which is always ~3000 鈫?always 'right').
     const sidebarScreenCenter = x + sidebarRect.offsetX + (sidebarRect.width / 2);
     const activeDisplay = screen.getDisplayNearestPoint({ x: sidebarScreenCenter, y: 100 });
     const bounds = activeDisplay.workArea;
@@ -311,8 +311,8 @@ function handleWindowMove(force = false) {
         if (visTop < bounds.y) { newY = bounds.y - sidebarRect.offsetY; clamped = true; }
         if (visBottom > bounds.y + bounds.height) { newY = bounds.y + bounds.height - sidebarRect.height - sidebarRect.offsetY; clamped = true; }
 
-        // Kullanıcının pencereyi istediği yere özgürce taşıyabilmesi için 
-        // ekrandan taşma (clamping) kısıtlamasını devre dışı bıraktık.
+        // Kullan谋c谋n谋n pencereyi istedi臒i yere 枚zg眉rce ta艧谋yabilmesi i莽in 
+        // ekrandan ta艧ma (clamping) k谋s谋tlamas谋n谋 devre d谋艧谋 b谋rakt谋k.
         // if (clamped) {
         //     mainWindow.setPosition(Math.round(newX), Math.round(newY));
         // }
@@ -415,10 +415,15 @@ function startClipboardPolling() {
 }
 
 function stopClipboardPolling() {
-    // clearInterval(clipboardPollingInterval);
-    // clipboardPollingInterval = null;
+    // Actually stop the polling timer (previously commented out, which meant
+    // the 500ms clipboard read loop could never be stopped from the UI).
+    if (clipboardPollingInterval) {
+        clearInterval(clipboardPollingInterval);
+        clipboardPollingInterval = null;
+    }
     lastClipboardText = '';
     lastClipboardImageDataUrl = '';
+    lastClipboardImageBmp = null; // Release raw image cache so the privacy toggle frees RAM
 }
 
 function createTray() {
@@ -1266,6 +1271,10 @@ ipcMain.on('start-clipboard-listener', () => {
     startClipboardPolling();
 });
 
+ipcMain.on('stop-clipboard-listener', () => {
+    stopClipboardPolling();
+});
+
 ipcMain.on('write-to-clipboard', (_event, data: { type: string; content: string }) => {
     console.log('[clipboard] write-to-clipboard received:', data?.type, 'len=', data?.content?.length);
     if (data.type === 'text') {
@@ -1389,7 +1398,7 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
     }, 600);
 });
 
-// ─── Screenshot Studio: Custom In-App Capture ─────────────────────
+// 鈹€鈹€鈹€ Screenshot Studio: Custom In-App Capture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 // Keep legacy trigger-screenshot for backward compat (e.g. PrintScreen key)
 ipcMain.on('trigger-screenshot', () => {
     if (isWin) {
@@ -1424,7 +1433,7 @@ ipcMain.on('take-screenshot', (event, hideApp) => {
     }, 150);
 });
 
-// ─── NEW: Custom Screenshot Studio Capture ─────────────────────────
+// 鈹€鈹€鈹€ NEW: Custom Screenshot Studio Capture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const { systemPreferences } = require('electron');
 let screenshotOverlayWindows: BrowserWindow[] = [];
 let preScreenshotBounds: { x: number; y: number; width: number; height: number; } | null = null;
@@ -1519,7 +1528,7 @@ ipcMain.handle('start-screenshot-capture', async () => {
 
     // 6. Get the ghost window position for coordinate mapping
     //    The renderer needs this to position the overlay at the correct
-    //    offset within the 6000×4000 ghost window.
+    //    offset within the 6000脳4000 ghost window.
     const windowPos = mainWindow ? mainWindow.getPosition() : [0, 0];
 
     // 7. Show KoBar back so the overlay React component becomes visible
@@ -1600,7 +1609,7 @@ ipcMain.on('screenshot-session-complete', () => {
     }
 });
 
-// ─── PIP Video Player (Webview-based mini browser) ───────────────────────────────
+// 鈹€鈹€鈹€ PIP Video Player (Webview-based mini browser) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 /**
  * Extract video URLs from open browsers (shared between on-demand and background scans).
@@ -1733,7 +1742,7 @@ function createPipWindow(videoUrl: string, title: string, albumArt?: string | nu
 // Returns an array of video URLs found in Chrome/Edge/Brave/Firefox address bars
 ipcMain.handle('get-active-video-urls', () => runVideoUrlScan());
 
-// Open PIP with a URL (mini browser approach — no capture needed)
+// Open PIP with a URL (mini browser approach 鈥?no capture needed)
 ipcMain.on('open-pip', (_event, { url, title, albumArt }: { url: string; title: string; albumArt?: string }) => {
     createPipWindow(url, title, albumArt || lastSmtcAlbumArt || undefined);
 });
@@ -1915,7 +1924,7 @@ ipcMain.handle('get-hwid', () => {
     return LicenseManager.getDeviceHWID();
 });
 
-// ─── KoPlayer: OS Media Polling ────────────────────────────────────
+// 鈹€鈹€鈹€ KoPlayer: OS Media Polling 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 function startMediaPolling() {
     if (mediaPollingInterval) return;
 
@@ -1970,13 +1979,13 @@ function startMediaPolling() {
             console.error('[KoPlayer] Failed to start SMTC Worker:', e);
         }
     } else if (isMac) {
-        // macOS polling: Birleşik AppleScript — System Events bypass
+        // macOS polling: Birle艧ik AppleScript 鈥?System Events bypass
         let macMediaPollingBusy = false;
         mediaPollingInterval = setInterval(() => {
             if (!mainWindow || macMediaPollingBusy) return;
             macMediaPollingBusy = true;
 
-            // 1. Check which media apps are running — direct app query, no System Events permission needed
+            // 1. Check which media apps are running 鈥?direct app query, no System Events permission needed
             const checkAppsScript = `
                 try
                     tell application "Spotify" to if it is running then return "Spotify"
@@ -2102,7 +2111,7 @@ function startMediaPolling() {
                 checkChild.stdin.write(checkAppsScript);
                 checkChild.stdin.end();
             }
-        }, 3000); // macOS: 3s polling — balanced between responsiveness and CPU
+        }, 3000); // macOS: 3s polling 鈥?balanced between responsiveness and CPU
     }
 }
 
@@ -2117,7 +2126,7 @@ function stopMediaPolling() {
     }
 }
 
-// ─── KoPlayer: Media Command Handler ───────────────────────────────
+// 鈹€鈹€鈹€ KoPlayer: Media Command Handler 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 ipcMain.on('media-command', (_event, command: string) => {
     if (isWin) {
         // Use existing PowerShell process with user32.dll keybd_event
@@ -2181,470 +2190,6 @@ ipcMain.on('open-external', (_event, url: string) => {
     shell.openExternal(url);
 });
 
-// ─── Dynamic Extensions IPC Handlers ────────────────────────────────
-const extensionsDir = path.join(app.getPath('userData'), 'extensions');
-const extensionsConfigPath = path.join(app.getPath('userData'), 'extensions-config.json');
-
-// Ensure extensions directory exists
-if (!fs.existsSync(extensionsDir)) {
-    fs.mkdirSync(extensionsDir, { recursive: true });
-}
-
-function getExtensionsConfig(): Record<string, boolean> {
-    if (fs.existsSync(extensionsConfigPath)) {
-        try {
-            return JSON.parse(fs.readFileSync(extensionsConfigPath, 'utf8'));
-        } catch (e) {
-            console.error('Failed to parse extensions config:', e);
-        }
-    }
-    return {};
-}
-
-function saveExtensionsConfig(config: Record<string, boolean>) {
-    try {
-        fs.writeFileSync(extensionsConfigPath, JSON.stringify(config, null, 2), 'utf8');
-    } catch (e) {
-        console.error('Failed to save extensions config:', e);
-    }
-}
-
-ipcMain.handle('get-installed-extensions', async () => {
-    try {
-        const config = getExtensionsConfig();
-        const installed: any[] = [];
-
-        const loadFromDir = (baseDir: string, isPlayground: boolean) => {
-            if (!fs.existsSync(baseDir)) return;
-            const dirs = fs.readdirSync(baseDir);
-            for (const dirName of dirs) {
-                const dirPath = path.join(baseDir, dirName);
-                if (!fs.statSync(dirPath).isDirectory()) continue;
-
-                const manifestPath = path.join(dirPath, 'manifest.json');
-                if (fs.existsSync(manifestPath)) {
-                    try {
-                        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-                        const entryPath = path.join(dirPath, manifest.entry || 'index.js');
-                        let code = '';
-                        if (fs.existsSync(entryPath)) {
-                            code = fs.readFileSync(entryPath, 'utf8');
-                        }
-
-                        let extName = manifest.name || dirName;
-                        let extId = manifest.id || dirName;
-                        if (isPlayground) {
-                            extName = `[DEV] ${extName}`;
-                            extId = `dev-${extId}`;
-                        }
-
-                        installed.push({
-                            id: extId,
-                            name: extName,
-                            version: manifest.version || '1.0.0',
-                            description: manifest.description || '',
-                            icon: manifest.icon || 'extension',
-                            image: manifest.image || '',
-                            isBeta: isPlayground ? true : manifest.isBeta === true,
-                            isPlayground: isPlayground,
-                            storeImage: Array.isArray(manifest.storeImage) ? manifest.storeImage.slice(0, 3) : [],
-                            categories: manifest.categories || [],
-                            versionNote: manifest.versionNote || '',
-                            githubRepo: manifest.githubRepo || manifest.githubLink || '',
-                            enabled: config[extId] !== false, // default to enabled
-                            code: code
-                        });
-                    } catch (err) {
-                        console.error(`Failed to load manifest for extension ${dirName} in ${baseDir}:`, err);
-                    }
-                }
-            }
-        };
-
-        // 1. Load regular extensions
-        loadFromDir(extensionsDir, false);
-
-        // 2. Load playground extensions
-        const playgroundDir = isDev 
-            ? path.join(__dirname, '../pluginsPlayground')
-            : path.join(app.getAppPath(), 'pluginsPlayground');
-        loadFromDir(playgroundDir, true);
-
-        return installed;
-    } catch (e) {
-        console.error('Failed to get installed extensions:', e);
-        return [];
-    }
-});
-
-ipcMain.handle('check-plugin-updates', async () => {
-    try {
-        if (!fs.existsSync(extensionsDir)) return [];
-        const dirs = fs.readdirSync(extensionsDir);
-        const updates: any[] = [];
-
-        for (const dirName of dirs) {
-            const dirPath = path.join(extensionsDir, dirName);
-            if (!fs.statSync(dirPath).isDirectory()) continue;
-
-            const manifestPath = path.join(dirPath, 'manifest.json');
-            if (fs.existsSync(manifestPath)) {
-                try {
-                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-                    const repo = manifest.githubRepo || manifest.githubLink;
-                    if (repo && repo.includes('/')) {
-                        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-                            headers: {
-                                'Accept': 'application/vnd.github.v3+json',
-                                'User-Agent': 'KoBar-App'
-                            }
-                        });
-                        
-                        if (releaseRes.ok) {
-                            const releaseData = await releaseRes.json() as any;
-                            const latestVersion = releaseData.tag_name || releaseData.name;
-                            
-                            const cleanCurrent = (manifest.version || '1.0.0').replace(/^v/, '');
-                            const cleanLatest = (latestVersion || '').replace(/^v/, '');
-                            
-                            if (cleanLatest && cleanLatest !== cleanCurrent) {
-                                updates.push({
-                                    id: manifest.id || dirName,
-                                    name: manifest.name || dirName,
-                                    currentVersion: manifest.version || '1.0.0',
-                                    latestVersion: cleanLatest,
-                                    releaseNotes: releaseData.body || '',
-                                    repo: repo
-                                });
-                            }
-                        }
-                    }
-                } catch (err) {
-                    console.error(`Failed to check updates for ${dirName}:`, err);
-                }
-            }
-        }
-        return updates;
-    } catch (e) {
-        console.error('Failed to check plugin updates:', e);
-        return [];
-    }
-});
-
-ipcMain.handle('get-available-extensions', async () => {
-    // Marketplace is currently empty (users can load custom extensions via zip files)
-    return [];
-});
-
-ipcMain.handle('install-extension', async (_event, id: string) => {
-    try {
-        const destDir = path.join(extensionsDir, id);
-        if (!fs.existsSync(destDir)) {
-            fs.mkdirSync(destDir, { recursive: true });
-        }
-
-        let manifestContent = '';
-        let indexJsContent = '';
-
-        // 1. Try to fetch from Vite dev server if running
-        try {
-            const resManifest = await fetch(`http://localhost:5173/extensions/${id}/manifest.json`);
-            const resIndex = await fetch(`http://localhost:5173/extensions/${id}/index.js`);
-            if (resManifest.ok && resIndex.ok) {
-                manifestContent = await resManifest.text();
-                indexJsContent = await resIndex.text();
-            }
-        } catch (e) {
-            // Dev server not available/failed
-        }
-
-        // 2. Try to copy from public assets folder in package
-        if (!manifestContent || !indexJsContent) {
-            try {
-                const baseDir = isDev
-                    ? path.join(__dirname, '../public/extensions', id)
-                    : path.join(app.getAppPath(), 'dist/extensions', id);
-
-                const manifestPath = path.join(baseDir, 'manifest.json');
-                const indexPath = path.join(baseDir, 'index.js');
-
-                if (fs.existsSync(manifestPath) && fs.existsSync(indexPath)) {
-                    manifestContent = fs.readFileSync(manifestPath, 'utf8');
-                    indexJsContent = fs.readFileSync(indexPath, 'utf8');
-                }
-            } catch (e) {
-                // Fallback copy failed
-            }
-        }
-
-
-
-        if (!manifestContent || !indexJsContent) {
-            throw new Error('Extension source files not found.');
-        }
-
-        fs.writeFileSync(path.join(destDir, 'manifest.json'), manifestContent, 'utf8');
-        fs.writeFileSync(path.join(destDir, 'index.js'), indexJsContent, 'utf8');
-
-        // Set as enabled in config
-        const config = getExtensionsConfig();
-        config[id] = true;
-        saveExtensionsConfig(config);
-
-        return true;
-    } catch (e) {
-        console.error(`Failed to install extension ${id}:`, e);
-        return false;
-    }
-});
-
-ipcMain.handle('uninstall-extension', async (_event, id: string) => {
-    try {
-        const destDir = path.join(extensionsDir, id);
-        if (fs.existsSync(destDir)) {
-            fs.rmSync(destDir, { recursive: true, force: true });
-        }
-        const config = getExtensionsConfig();
-        delete config[id];
-        saveExtensionsConfig(config);
-        return true;
-    } catch (e) {
-        console.error(`Failed to uninstall extension ${id}:`, e);
-        return false;
-    }
-});
-
-ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: boolean) => {
-    try {
-        const config = getExtensionsConfig();
-        config[id] = enabled;
-        saveExtensionsConfig(config);
-        return true;
-    } catch (e) {
-        console.error(`Failed to toggle extension enabled state:`, e);
-        return false;
-    }
-});
-
-// Shared helper: installs an extension from a ZIP file path
-async function installExtensionFromZipPath(zipPath: string, sourceRepo?: string, versionOverride?: string): Promise<{ success: boolean; reason?: string }> {
-    const zip = new AdmZip(zipPath);
-    
-    // Extract to a temporary folder inside userData first to inspect manifest.json
-    const tempExtractDir = path.join(app.getPath('userData'), 'temp_ext_' + Date.now());
-    if (!fs.existsSync(tempExtractDir)) {
-        fs.mkdirSync(tempExtractDir, { recursive: true });
-    }
-
-    zip.extractAllTo(tempExtractDir, true);
-
-    // Check if manifest.json exists
-    // Check both the root directory and the first level subdirectories for manifest.json
-    let manifestPath = path.join(tempExtractDir, 'manifest.json');
-    let searchDir = tempExtractDir;
-
-    if (!fs.existsSync(manifestPath)) {
-        const files = fs.readdirSync(tempExtractDir);
-        if (files.length === 1) {
-            const subDirPath = path.join(tempExtractDir, files[0]);
-            if (fs.statSync(subDirPath).isDirectory()) {
-                const subManifestPath = path.join(subDirPath, 'manifest.json');
-                if (fs.existsSync(subManifestPath)) {
-                    manifestPath = subManifestPath;
-                    searchDir = subDirPath;
-                }
-            }
-        } else {
-            // Look for any subdirectory containing manifest.json at the top level
-            for (const file of files) {
-                const subDirPath = path.join(tempExtractDir, file);
-                if (fs.statSync(subDirPath).isDirectory()) {
-                    const subManifestPath = path.join(subDirPath, 'manifest.json');
-                    if (fs.existsSync(subManifestPath)) {
-                        manifestPath = subManifestPath;
-                        searchDir = subDirPath;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if (!fs.existsSync(manifestPath)) {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
-        return { success: false, reason: 'manifest.json not found in ZIP archive.' };
-    }
-
-    let manifest: any;
-    try {
-        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    } catch (e) {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
-        return { success: false, reason: 'Invalid manifest.json file.' };
-    }
-
-    if (!manifest.id || !manifest.name) {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
-        return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
-    }
-
-    if (sourceRepo || versionOverride) {
-        if (sourceRepo) manifest.githubRepo = sourceRepo;
-        if (versionOverride) manifest.version = versionOverride;
-        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 4), 'utf8');
-    }
-
-    const extensionId = manifest.id;
-    const targetDir = path.join(extensionsDir, extensionId);
-
-    // If target directory already exists, clear it first
-    if (fs.existsSync(targetDir)) {
-        fs.rmSync(targetDir, { recursive: true, force: true });
-    }
-
-    // Ensure parent extensions folder exists
-    if (!fs.existsSync(extensionsDir)) {
-        fs.mkdirSync(extensionsDir, { recursive: true });
-    }
-
-    // Copy/move searchDir (which contains manifest.json at its root) to targetDir
-    fs.renameSync(searchDir, targetDir);
-
-    // Clean up the temp extract root
-    if (fs.existsSync(tempExtractDir)) {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
-    }
-
-    // Update config to enable this extension
-    const config = getExtensionsConfig();
-    config[extensionId] = true;
-    saveExtensionsConfig(config);
-
-    return { success: true };
-}
-
-ipcMain.handle('install-extension-from-file', async () => {
-    try {
-        // Pass mainWindow as parent so the dialog opens above the always-on-top window
-        const parentWin = mainWindow || BrowserWindow.getAllWindows()[0];
-        const dialogOptions = {
-            title: 'Select Extension ZIP Archive',
-            filters: [
-                { name: 'ZIP Archives', extensions: ['zip'] }
-            ],
-            properties: ['openFile' as const]
-        };
-
-        const { canceled, filePaths } = parentWin
-            ? await dialog.showOpenDialog(parentWin, dialogOptions)
-            : await dialog.showOpenDialog(dialogOptions);
-
-        if (canceled || filePaths.length === 0) {
-            return { success: false, reason: 'Canceled by user' };
-        }
-
-        return await installExtensionFromZipPath(filePaths[0]);
-    } catch (e: any) {
-        console.error('Failed to install extension from file:', e);
-        return { success: false, reason: e.message || 'Unknown error occurred.' };
-    }
-});
-
-// Install extension from a file path directly (used by drag & drop)
-ipcMain.handle('install-extension-from-path', async (_event, filePath: string) => {
-    try {
-        if (!filePath || typeof filePath !== 'string') {
-            return { success: false, reason: 'Invalid file path.' };
-        }
-        if (!filePath.toLowerCase().endsWith('.zip')) {
-            return { success: false, reason: 'Only .zip files are supported.' };
-        }
-        if (!fs.existsSync(filePath)) {
-            return { success: false, reason: 'File not found.' };
-        }
-        return await installExtensionFromZipPath(filePath);
-    } catch (e: any) {
-        console.error('Failed to install extension from path:', e);
-        return { success: false, reason: e.message || 'Unknown error occurred.' };
-    }
-});
-
-ipcMain.handle('install-extension-from-github', async (_event, id: string, repo: string) => {
-    try {
-        if (!repo || !repo.includes('/')) {
-            return { success: false, reason: 'Invalid GitHub repository format.' };
-        }
-
-        // 1. Fetch latest release metadata
-        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-            headers: {
-                'Accept': 'application/vnd.github.v3+json',
-                'User-Agent': 'KoBar-App'
-            }
-        });
-
-        if (!releaseRes.ok) {
-            return { success: false, reason: `Failed to fetch latest release metadata (${releaseRes.status}).` };
-        }
-
-        const releaseData = await releaseRes.json() as any;
-        const asset = releaseData.assets?.find((a: any) => a.name.endsWith('.zip'));
-
-        if (!asset && !releaseData.zipball_url) {
-            return { success: false, reason: 'No .zip asset or source code found in the latest release.' };
-        }
-
-        // 2. Download the asset stream
-        const downloadUrl = asset ? asset.url : releaseData.zipball_url;
-        const headers: Record<string, string> = { 'User-Agent': 'KoBar-App' };
-        if (asset) {
-            headers['Accept'] = 'application/octet-stream';
-        }
-
-        const assetRes = await fetch(downloadUrl, { headers });
-
-        if (!assetRes.ok || !assetRes.body) {
-            return { success: false, reason: `Failed to download asset (${assetRes.status}).` };
-        }
-
-        const totalBytes = Number(assetRes.headers.get('content-length') || 0);
-        let loadedBytes = 0;
-        
-        // 3. Pipe stream to temporary file and emit progress
-        const tempZipPath = path.join(app.getPath('temp'), `plugin_${id}_${Date.now()}.zip`);
-        const { Readable } = require('stream');
-        const readableStream = Readable.fromWeb(assetRes.body as any);
-        const writeStream = fs.createWriteStream(tempZipPath);
-
-        readableStream.on('data', (chunk: Buffer) => {
-            loadedBytes += chunk.length;
-            if (totalBytes > 0 && mainWindow) {
-                const percent = Math.round((loadedBytes / totalBytes) * 100);
-                mainWindow.webContents.send('plugin-install-progress', { id, percent });
-            }
-        });
-
-        await new Promise((resolve, reject) => {
-            readableStream.pipe(writeStream)
-                .on('finish', resolve)
-                .on('error', reject);
-        });
-
-        // 4. Pass to existing installer, overriding the version with the release tag to prevent infinite update loops
-        const latestVersion = (releaseData.tag_name || releaseData.name || '').replace(/^v/, '');
-        const result = await installExtensionFromZipPath(tempZipPath, repo, latestVersion);
-        
-        // 5. Cleanup
-        if (fs.existsSync(tempZipPath)) {
-            fs.unlinkSync(tempZipPath);
-        }
-
-        return result;
-    } catch (e: any) {
-        console.error('Failed to install from GitHub:', e);
-        return { success: false, reason: e.message || 'Unknown error occurred.' };
-    }
-});
 
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
