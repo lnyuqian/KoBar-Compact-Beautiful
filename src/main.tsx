@@ -7,7 +7,6 @@ import './index.css'
 import App from './App.tsx'
 import PipPlayer from './components/layout/PipPlayer.tsx'
 import { useAppStore } from './store/useAppStore'
-import './components/extensions/extensionRegistry'
 
 window.React = React;
 window.ReactDOM = ReactDOM;

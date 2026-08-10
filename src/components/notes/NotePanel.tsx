@@ -53,7 +53,10 @@ const NotePanel: React.FC = () => {
             ta.value = text;
             document.body.appendChild(ta);
             ta.select();
-            try { document.execCommand('copy'); } catch (err) { console.error('Copy failed:', err); }
+            try { document.execCommand('copy'); } catch (err) {
+                console.error('Copy failed:', err);
+                window.api?.sendNotification?.('Copy Failed', 'Could not copy the note text.');
+            }
             document.body.removeChild(ta);
         };
         // Prefer the main-process clipboard (reliable regardless of window focus);
