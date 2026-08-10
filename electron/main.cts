@@ -36,17 +36,42 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 
 // ─── Ghost Window Geometry Constants ─────────────────────────────────────
-// The invisible "ghost" window is much larger than the visible sidebar so the
-// transparent window can span a monitor and forward clicks via hit-testing.
+// Fallback size used only if no displays are reported by the OS.
 const GHOST_WINDOW_WIDTH = 6000;
 const GHOST_WINDOW_HEIGHT = 4000;
 // Initial visual sidebar rectangle; the renderer keeps it in sync via updateSidebarRect.
 const DEFAULT_SIDEBAR_RECT = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
-// The 80px bar is horizontally centered in the 6000px ghost window:
-// bar left edge = 6000/2 - 80/2 = 2960, bar center = 3000, bar right edge = 3040.
-const BAR_LEFT_OFFSET = GHOST_WINDOW_WIDTH / 2 - DEFAULT_SIDEBAR_RECT.width / 2;
-const BAR_CENTER_OFFSET = GHOST_WINDOW_WIDTH / 2;
-const BAR_RIGHT_OFFSET = GHOST_WINDOW_WIDTH / 2 + DEFAULT_SIDEBAR_RECT.width / 2;
+// Distance from the right edge of the ghost window to the default sidebar position.
+const SIDEBAR_EDGE_MARGIN = 40;
+
+// Returns the bounding box that covers every display's workArea. The ghost
+// window is sized to exactly this box (instead of a fixed 6000x4000), which
+// slashes GPU/compositor cost on typical setups while still spanning all
+// monitors for free-floating drag and multi-monitor edge detection.
+function getGhostBounds(): { x: number; y: number; width: number; height: number } {
+    const displays = screen.getAllDisplays();
+    if (displays.length === 0) {
+        return { x: 0, y: 0, width: GHOST_WINDOW_WIDTH, height: GHOST_WINDOW_HEIGHT };
+    }
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const d of displays) {
+        const wa = d.workArea;
+        minX = Math.min(minX, wa.x);
+        minY = Math.min(minY, wa.y);
+        maxX = Math.max(maxX, wa.x + wa.width);
+        maxY = Math.max(maxY, wa.y + wa.height);
+    }
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+// Center of the ghost window in window-relative coordinates.
+function getGhostCenter(): { x: number; y: number } {
+    const b = getGhostBounds();
+    return { x: b.width / 2, y: b.height / 2 };
+}
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -113,51 +138,24 @@ function createWindow() {
         console.error('Could not load window state', e);
     }
 
-    const displays = screen.getAllDisplays();
+    // The ghost window exactly covers the union of every display workArea.
+    // Window position/size no longer depend on saved state: the sidebar moves
+    // inside the window (via updateSidebarRect) instead of the window moving.
+    const ghost = getGhostBounds();
+
+    // Default sidebar position: docked to the right edge of the primary display.
     const primary = screen.getPrimaryDisplay();
-
-    // The visual 80px Sidebar is horizontally centered within the 3400px container.
-    // 3400/2 = 1700. The bar is from 1660 to 1740.
-    // To dock the bar on the right edge by default: windowX + 3040 = rightEdge
-    const defaultX = primary.workArea.x + primary.workArea.width - BAR_RIGHT_OFFSET;
-    const defaultY = primary.workArea.y;
-
-    let x = savedState?.x ?? defaultX;
-    let y = savedState?.y ?? defaultY;
-
-    // Boundary check to ensure the invisible "ghost" 3400px window hasn't pushed the KoBar visual bar 
-    // entirely off-screen on any resolution changes or active display disconnects.
-    let isVisible = false;
-    for (const display of displays) {
-        const bounds = display.workArea;
-        const barLeft = x + BAR_LEFT_OFFSET;
-        const barRight = barLeft + 80;
-        const barTop = y + 20;
-
-        // Ensure the 80px physical bar intersects the display
-        if (barLeft < bounds.x + bounds.width && barRight > bounds.x) {
-            // Ensure at least top 100px is visible so user can grab the Eye
-            if (barTop < bounds.y + bounds.height && barTop > bounds.y - 100) {
-                isVisible = true;
-                break;
-            }
-        }
-    }
-
-    if (!isVisible) {
-        // Saved position is off-screen 鈥?teleport to primary display after window creation
-        const safePos = calculatePrimaryCenterPosition();
-        x = safePos.x;
-        y = safePos.y;
-    }
+    const defaultSidebarRight = primary.workArea.x + primary.workArea.width - SIDEBAR_EDGE_MARGIN;
+    sidebarRect.offsetX = defaultSidebarRight - ghost.x - sidebarRect.width;
+    sidebarRect.offsetY = 20;
 
     // Mac: use `bounds` (full screen incl. menu bar + Dock area) instead of `workArea`.
     // This prevents macOS from clipping the transparent window at the Dock boundary.
     const macScreen = isMac ? primary.bounds : primary.workArea;
-    const winWidth = isWin ? GHOST_WINDOW_WIDTH : macScreen.width;
-    const winHeight = isWin ? GHOST_WINDOW_HEIGHT : macScreen.height;
-    const winX = isWin ? x : macScreen.x;
-    const winY = isWin ? y : macScreen.y;
+    const winWidth = isWin ? ghost.width : macScreen.width;
+    const winHeight = isWin ? ghost.height : macScreen.height;
+    const winX = isWin ? ghost.x : macScreen.x;
+    const winY = isWin ? ghost.y : macScreen.y;
 
     mainWindow = new BrowserWindow({
         x: winX,
@@ -185,9 +183,9 @@ function createWindow() {
     });
 
     if (isWin) {
-        mainWindow.setMinimumSize(GHOST_WINDOW_WIDTH, GHOST_WINDOW_HEIGHT);
-        mainWindow.setMaximumSize(GHOST_WINDOW_WIDTH * 2, GHOST_WINDOW_HEIGHT * 3);
-        mainWindow.setSize(GHOST_WINDOW_WIDTH, GHOST_WINDOW_HEIGHT);
+        mainWindow.setMinimumSize(winWidth, winHeight);
+        mainWindow.setMaximumSize(Math.max(winWidth * 2, 4000), Math.max(winHeight * 3, 4000));
+        mainWindow.setSize(winWidth, winHeight);
     } else if (isMac) {
         mainWindow.setMinimumSize(winWidth, winHeight);
         mainWindow.setSize(winWidth, winHeight);
@@ -332,8 +330,9 @@ function handleWindowMove(force = false) {
     }
 }
 
-// Calculates the ghost window (x, y) so it is perfectly centered horizontally
-// and clamped to the top of the primary display. Used on launch fallback and tray show.
+// Returns the ghost window position. The ghost window is sized to the union of
+// all displays, so its position is simply the top-left corner of that union.
+// Used on launch fallback and tray show.
 function calculatePrimaryCenterPosition(): { x: number; y: number } {
     const primary = screen.getPrimaryDisplay();
     const wa = primary.workArea; // { x, y, width, height } in OS coords
@@ -342,11 +341,9 @@ function calculatePrimaryCenterPosition(): { x: number; y: number } {
         return { x: wa.x, y: wa.y };
     }
 
-    // Center the 6000x4000 ghost window horizontally, clamp vertically to top
-    const windowWidth = GHOST_WINDOW_WIDTH;
-
-    const x = Math.floor(wa.x + (wa.width / 2) - (windowWidth / 2));
-    const y = wa.y;
+    const ghost = getGhostBounds();
+    const x = ghost.x;
+    const y = ghost.y;
 
     return { x, y };
 }
@@ -1793,17 +1790,10 @@ ipcMain.handle('recenter-window-on-widget', async (event, relativeX, relativeY, 
         y: Math.round(physicalY + height / 2) 
     });
 
-    // Calculate new centered window position
-    const windowWidth = GHOST_WINDOW_WIDTH;
-    const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
-    const newWinY = activeDisplay.workArea.y;
-
-    // Move the window
-    win.setPosition(newWinX, newWinY);
-
-    // Calculate new relative coordinates
-    const newRelativeX = physicalX - newWinX;
-    const newRelativeY = physicalY - newWinY;
+    // The ghost window already spans every display, so the window never needs
+    // to move; widget coordinates stay relative to the window origin.
+    const newRelativeX = relativeX;
+    const newRelativeY = relativeY;
 
     // Trigger edge-changed to update screen bounds in the frontend
     handleWindowMove(true);
@@ -1814,6 +1804,12 @@ ipcMain.handle('recenter-window-on-widget', async (event, relativeX, relativeY, 
 ipcMain.on('get-window-position-sync', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     event.returnValue = win ? win.getPosition() : [0, 0];
+});
+
+ipcMain.on('get-ghost-center-sync', (event) => {
+    // Window-relative center of the ghost window, so the renderer can compute
+    // physical pixel positions without hard-coding the window dimensions.
+    event.returnValue = getGhostCenter();
 });
 
 ipcMain.handle('get-displays-info', () => {
@@ -1851,7 +1847,7 @@ ipcMain.on('register-teleport-shortcut', (event, shortcut) => {
                 // KoBar Sidebar is statically positioned at y=20 (pt-[20px]).
                 // We must use a targetVisualY close to 20 (e.g., 100) instead of half of height,
                 // otherwise restoring the window from the eye will place the sidebar off-screen.
-                const targetVisualX = BAR_CENTER_OFFSET;
+                const targetVisualX = getGhostCenter().x;
                 const targetVisualY = 100;
                 const newX = cursor.x - targetVisualX;
                 const newY = cursor.y - targetVisualY;

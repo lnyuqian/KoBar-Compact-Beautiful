@@ -15,9 +15,6 @@ import TutorialManager from './components/tutorial/TutorialManager';
 
 
 
-// Must stay in sync with the main-process ghost window geometry (electron/main.cts).
-const GHOST_WINDOW_CENTER_X = 3000;
-
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
 export let isResizingGlobal = false;
@@ -211,7 +208,8 @@ const App: React.FC = () => {
         const visibleHeight = screenBounds?.height ?? 800;
         const isMac = useAppStore.getState().isMac;
         // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
-        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : GHOST_WINDOW_CENTER_X, y: Math.floor(visibleHeight / 2) });
+        const ghostCenterX = window.api?.getGhostCenterSync?.().x ?? Math.floor(window.innerWidth / 2);
+        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : ghostCenterX, y: Math.floor(visibleHeight / 2) });
       }));
     }
     if (window.api?.onResetUiPosition) {

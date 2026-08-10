@@ -45,6 +45,7 @@ declare global {
             moveWindow: (dx: number, dy: number) => void;
             recenterWindowOnWidget: (x: number, y: number, width: number, height: number) => Promise<{ x: number; y: number; displayBounds: any } | null>;
             getWindowPositionSync: () => [number, number];
+            getGhostCenterSync: () => { x: number; y: number };
             // Native App Launcher
             getFileIcon: (path: string) => Promise<string | null>;
             launchFile: (path: string) => void;
