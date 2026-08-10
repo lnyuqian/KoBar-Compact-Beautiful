@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import '@tailwindcss/browser';
 import './index.css';
 import { useAppStore } from './store/useAppStore';
 import Sidebar from './components/layout/Sidebar';
