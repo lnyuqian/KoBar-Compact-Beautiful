@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
-  <img src="https://img.shields.io/badge/version-1.1.0-f4a125?style=flat" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.1.2-f4a125?style=flat" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
@@ -48,6 +48,27 @@ Think of it as a Swiss Army knife that floats on your desktop. KoBar keeps notes
 - **Mini Mode** — collapses into a small floating eye icon to save space.
 - **Free-floating mode** — drag the sidebar anywhere on the screen, across multiple monitors.
 - **Multi-monitor support** — seamless edge detection and snapping across all connected displays.
+
+
+## 🛠 Maintenance & Optimizations
+
+This fork removes the plugin system and ships the built-in core as a self-contained sidebar. The following improvements were applied:
+
+- **Privacy-first clipboard**: new **Clipboard Monitoring** toggle in Settings stops the main-process clipboard polling entirely when disabled.
+- **Lower CPU usage**: click-through hit-testing is coalesced with `requestAnimationFrame` (one `elementFromPoint` per frame instead of per mousemove).
+- **Smaller window footprint**: the transparent ghost window is sized to the union of all displays instead of a fixed 6000×4000, cutting GPU/compositor cost.
+- **Faster startup & caching**: vendor libraries are split into stable chunks; the runtime Tailwind compiler was removed (build-time Tailwind covers all classes).
+- **Better error feedback**: clipboard copy and note export failures now raise a desktop notification instead of failing silently.
+- **Cleaner codebase**: main-process geometry, clipboard and tray logic extracted into dedicated modules; ghost-window magic numbers replaced by named constants.
+
+### Development
+
+```bash
+npm install
+npm run dev      # Vite + Electron dev mode
+npm run build   # TypeScript + Vite production build
+npm run lint    # ESLint
+```
 
 ## 🎨 Theming & Design
 
