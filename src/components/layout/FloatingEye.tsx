@@ -4,6 +4,24 @@ import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 import EyeNotification from './EyeNotification';
 import { CartoonEyeClosed } from './MaskIcon';
 
+// The main process sizes the ghost window to the union of all displays and
+// exposes its center via a synchronous IPC call. The window size is stable for
+// the app session, so the result is cached after the first read.
+let cachedGhostCenter: { x: number; y: number } | null = null;
+function getGhostCenter(): { x: number; y: number } {
+    if (cachedGhostCenter) return cachedGhostCenter;
+    try {
+        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: 3000, y: 2000 };
+    } catch {
+        cachedGhostCenter = { x: 3000, y: 2000 };
+    }
+    return cachedGhostCenter;
+}
+function getGhostWidth(): number {
+    return getGhostCenter().x * 2;
+}
+
+
 const FloatingEye: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const miniModePosition = useAppStore(state => state.miniModePosition);
@@ -25,7 +43,7 @@ const FloatingEye: React.FC = () => {
     // left edge → slightly inward from the sidebar's expected CSS position
     // right edge → slightly inward from the other side
     const isMac = useAppStore(state => state.isMac);
-    const centerX = isMac ? Math.floor(window.innerWidth / 2) : 3000;
+    const centerX = isMac ? Math.floor(window.innerWidth / 2) : getGhostCenter().x;
     const safeDefaultX = edgePosition === 'left'
         ? (centerX - visibleW / 2 + 60)   // Near left edge of visible area within ghost window
         : (centerX + visibleW / 2 - 60);  // Near right edge of visible area within ghost window
@@ -108,7 +126,7 @@ const FloatingEye: React.FC = () => {
                 );
 
                 if (activeDisplay) {
-                    const windowWidth = 6000;
+                    const windowWidth = getGhostWidth();
                     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
                     const newWinY = activeDisplay.workArea.y;
 

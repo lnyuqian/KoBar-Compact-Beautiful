@@ -111,24 +111,23 @@ function createWindow() {
         console.error('Could not load window state', e);
     }
 
-    // The ghost window exactly covers the union of every display workArea.
-    // Window position/size no longer depend on saved state: the sidebar moves
-    // inside the window (via updateSidebarRect) instead of the window moving.
-    const ghost = getGhostBounds();
+    // Single-screen mode: anchor the window to the primary display workArea.
+    // This intentionally ignores any secondary/virtual displays so the ghost
+    // window never lands off-screen when a monitor is disconnected.
+    const primary = screen.getPrimaryDisplay();
 
     // Default sidebar position: docked to the right edge of the primary display.
-    const primary = screen.getPrimaryDisplay();
     const defaultSidebarRight = primary.workArea.x + primary.workArea.width - SIDEBAR_EDGE_MARGIN;
-    sidebarRect.offsetX = defaultSidebarRight - ghost.x - sidebarRect.width;
+    sidebarRect.offsetX = defaultSidebarRight - primary.workArea.x - sidebarRect.width;
     sidebarRect.offsetY = 20;
 
     // Mac: use `bounds` (full screen incl. menu bar + Dock area) instead of `workArea`.
     // This prevents macOS from clipping the transparent window at the Dock boundary.
     const macScreen = isMac ? primary.bounds : primary.workArea;
-    const winWidth = isWin ? ghost.width : macScreen.width;
-    const winHeight = isWin ? ghost.height : macScreen.height;
-    const winX = isWin ? ghost.x : macScreen.x;
-    const winY = isWin ? ghost.y : macScreen.y;
+    const winWidth = isMac ? macScreen.width : primary.workArea.width;
+    const winHeight = isMac ? macScreen.height : primary.workArea.height;
+    const winX = isMac ? macScreen.x : primary.workArea.x;
+    const winY = isMac ? macScreen.y : primary.workArea.y;
 
     mainWindow = new BrowserWindow({
         x: winX,
@@ -310,15 +309,10 @@ function calculatePrimaryCenterPosition(): { x: number; y: number } {
     const primary = screen.getPrimaryDisplay();
     const wa = primary.workArea; // { x, y, width, height } in OS coords
 
-    if (isMac) {
-        return { x: wa.x, y: wa.y };
-    }
-
-    const ghost = getGhostBounds();
-    const x = ghost.x;
-    const y = ghost.y;
-
-    return { x, y };
+    // Always anchor to the primary display's workArea top-left corner.
+    // Using the ghost-bounds corner here can place the window off-screen
+    // when the display union includes a disconnected/virtual monitor.
+    return { x: wa.x, y: wa.y };
 }
 
 function teleportToPrimaryCenter(showWindow = true) {

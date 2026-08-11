@@ -541,7 +541,11 @@ const Sidebar: React.FC = () => {
                         src={dragIcon}
                         alt=""
                         className="pointer-events-none"
-                        style={{ width: 20 * iconScale, height: 20 * iconScale }}
+                        style={{ 
+                            width: 20 * iconScale * 1.2, 
+                            height: 20 * iconScale * 1.2,
+                            transform: 'translateY(-7px)'
+                        }}
                     />
                 </div>
 
