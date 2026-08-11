@@ -13,7 +13,7 @@ const Accordion: React.FC<{
     const design = useAppStore(state => state.design);
 
     return (
-        <div className="rounded-xl shadow-inner border overflow-hidden" 
+        <div className="rounded-[10px] shadow-inner border overflow-hidden" 
             style={{ 
                 backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)', 
                 borderColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)' 

@@ -245,16 +245,16 @@ function createWindow() {
         const menu = new Menu();
         
         if (params.isEditable) {
-            menu.append(new MenuItem({ label: 'Undo', role: 'undo' }));
-            menu.append(new MenuItem({ label: 'Redo', role: 'redo' }));
+            menu.append(new MenuItem({ label: '撤销', role: 'undo' }));
+            menu.append(new MenuItem({ label: '重做', role: 'redo' }));
             menu.append(new MenuItem({ type: 'separator' }));
-            menu.append(new MenuItem({ label: 'Cut', role: 'cut' }));
-            menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
-            menu.append(new MenuItem({ label: 'Paste', role: 'paste' }));
+            menu.append(new MenuItem({ label: '剪切', role: 'cut' }));
+            menu.append(new MenuItem({ label: '复制', role: 'copy' }));
+            menu.append(new MenuItem({ label: '粘贴', role: 'paste' }));
             menu.append(new MenuItem({ type: 'separator' }));
-            menu.append(new MenuItem({ label: 'Select All', role: 'selectAll' }));
+            menu.append(new MenuItem({ label: '全选', role: 'selectAll' }));
         } else if (params.selectionText && params.selectionText.trim() !== '') {
-            menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
+            menu.append(new MenuItem({ label: '复制', role: 'copy' }));
         }
         
         if (menu.items.length > 0) {
@@ -475,7 +475,7 @@ app.whenReady().then(() => {
 
     autoUpdater.on('error', (err) => {
         if (mainWindow) {
-            mainWindow.webContents.send('update-error', err?.message || 'Unknown update error');
+            mainWindow.webContents.send('update-error', err?.message || '未知的更新错误');
         }
     });
 
@@ -521,11 +521,11 @@ ipcMain.handle('save-note-as-text', async (event, { title, content }) => {
     
     try {
         const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-            title: 'Save Note As Text',
+            title: '将笔记另存为文本',
             defaultPath: `${safeTitle || 'note'}.txt`,
             filters: [
-                { name: 'Text Files', extensions: ['txt'] },
-                { name: 'All Files', extensions: ['*'] }
+                { name: '文本文件', extensions: ['txt'] },
+                { name: '所有文件', extensions: ['*'] }
             ]
         });
 
@@ -554,7 +554,7 @@ ipcMain.handle('check-for-updates-manual', async () => {
     try {
         const result = await autoUpdater.checkForUpdates();
         if (!result) {
-            throw new Error('No update information retrieved');
+            throw new Error('未获取到更新信息');
         }
         const currentVersion = app.getVersion();
         const latestVersion = result.updateInfo.version;
@@ -568,7 +568,7 @@ ipcMain.handle('check-for-updates-manual', async () => {
     } catch (error: any) {
         return {
             status: 'error',
-            message: error?.message || 'Unknown error'
+            message: error?.message || '未知错误'
         };
     }
 });
@@ -1199,7 +1199,7 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
             macSysPrefs.isTrustedAccessibilityClient(true);
             mainWindow?.webContents.send('clipboard-paste-error', {
                 error: 'accessibility_required',
-                message: 'Enable Accessibility for KoBar in System Settings'
+                message: '在系统设置中为 KoBar 启用辅助功能'
             });
             // Re-register shortcut immediately since paste won't happen
             if (isGlobalPasteModeActive) {
@@ -1293,10 +1293,10 @@ ipcMain.handle('start-screenshot-capture', async () => {
         if (screenStatus !== 'granted') {
             const response = await dialog.showMessageBox({
                 type: 'warning',
-                title: 'Screen Recording Permission Required',
-                message: 'KoBar needs Screen Recording permissions to use the Screenshot tool.',
-                detail: 'Please enable "Screen Recording" for KoBar in System Settings -> Privacy & Security, then restart the application.',
-                buttons: ['Open System Settings', 'Cancel'],
+                title: '需要屏幕录制权限',
+                message: 'KoBar 需要使用屏幕录制权限才能使用截图工具。',
+                detail: 'Please enable "Screen Recording" 为 KoBar 启用"屏幕录制"，然后重新启动 application.',
+                buttons: ['打开系统设置', '取消'],
                 defaultId: 0,
                 cancelId: 1
             });
@@ -1416,10 +1416,10 @@ ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format:
 
         // Open native save dialog as fallback
         const result = await dialog.showSaveDialog(mainWindow!, {
-            title: 'Save Screenshot',
+            title: '保存截图',
             defaultPath: data.defaultPath ? path.join(data.defaultPath, `KoBar_Screenshot_${Date.now()}.${format}`) : path.join(app.getPath('desktop'), `KoBar_Screenshot_${Date.now()}.${format}`),
             filters: [
-                { name: 'Images', extensions: [format] }
+                { name: '图片', extensions: [format] }
             ]
         });
 
@@ -1847,8 +1847,8 @@ function startMediaPolling() {
                     macMediaPollingBusy = false;
                     if (err.message && err.message.includes('-1743')) {
                         mainWindow?.webContents.send('media-update', {
-                            title: 'Permission Required',
-                            artist: 'Enable Automation in System Settings',
+                            title: '需要权限',
+                            artist: '在系统设置中启用自动化',
                             albumArt: null,
                             isPlaying: false
                         });

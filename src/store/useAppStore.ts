@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { translations } from '../i18n/translations';
-import type { LanguageCode, TranslationKeys } from '../i18n/translations';
+import type { TranslationKeys } from '../i18n/translations';
 export type ThemeName = 'ember' | 'ocean' | 'sakura' | 'emerald' | 'midnight' | 'amethyst' | 'crimson' | 'nord' | 'coffee' | 'lavender' | 'custom';
 
 // ─── Custom Theme Color → CSS Variables Generator ───
@@ -271,9 +271,6 @@ interface AppState {
     // Clipboard privacy: when false, the main process stops reading the clipboard
     clipboardMonitoring: boolean;
     setClipboardMonitoring: (val: boolean) => void;
-    // Language
-    language: LanguageCode;
-    setLanguage: (lang: LanguageCode) => void;
     t: (key: TranslationKeys) => string;
 
     currentMedia: MediaData | null;
@@ -301,40 +298,37 @@ interface AppState {
 const defaultNotes: Note[] = [
     {
         id: 1,
-        title: 'Welcome to KoBar!',
+        title: '欢迎使用 KoBar！',
         icon: 'waving_hand',
         emoji: '👋',
-        content: `
-<p><strong>Your modular, always-on-top desktop utility sidebar.</strong></p>
-<p>A multi-threaded creative assistant that lives on the edge of your screen.</p>
+        content: `<p><strong>你的模块化、始终置顶的桌面实用侧边栏。</strong></p>
+<p>一个多线程创意助手，常驻你的屏幕边缘。</p>
 <br>
-<p><strong>🌟 Open Source & Support</strong></p>
-<p>KoBar is a completely open-source project! We welcome your feedback and contributions.</p>
-<p>For bug reports, software support, feature requests, and financial support, please visit our GitHub repository: <a href="https://github.com/eedali/KoBar" target="_blank" rel="noopener noreferrer">https://github.com/eedali/KoBar</a></p>
+<p><strong>🌟 开源与支持</strong></p>
+<p>KoBar 是一个完全开源的项目！我们欢迎你的反馈和贡献。</p>
+<p>如需报告问题、获取支持、提出功能建议或进行赞助，请访问我们的 GitHub 仓库：<a href="https://github.com/eedali/KoBar" target="_blank" rel="noopener noreferrer">https://github.com/eedali/KoBar</a></p>
 <br>
-<p><strong>🚀 KoBar Features</strong></p>
+<p><strong>🚀 KoBar 功能</strong></p>
 <ul>
-    <li>⚡ <strong>App Launcher (Shortcuts):</strong> Pin and launch your favorite applications instantly from the sidebar. Drag and drop any file or app to create a quick shortcut.</li>
-    <li>📋 <strong>Clipboard Manager (Copy & Paste):</strong> A multi-slot clipboard that automatically saves your copied text history. Access and paste your past clips with a single click.</li>
-    <li>📅 <strong>KoCalendar:</strong> A quick-access calendar to easily view your schedule and important dates. Stay organized without leaving your current workflow.</li>
-    <li>✅ <strong>To-Do List:</strong> Keep track of your daily tasks with a simple and effective checkable list. Manage your goals efficiently directly from the edge of your screen.</li>
-    <li>📝 <strong>Snippet Vault:</strong> Store and manage your frequently used code blocks or text snippets. Copy them to your clipboard instantly whenever you need them.</li>
-
-    <li>📸 <strong>Screenshot Studio:</strong> Capture your screen instantly with built-in annotation and editing tools. Save or share your screen captures without opening external software.</li>
-
-    <li>🧮 <strong>Calculator:</strong> A sleek, pop-up calculator for quick mathematical operations on the fly.</li>
-    <li>🎨 <strong>Color Picker:</strong> Effortlessly pick any color from your screen to get its HEX or RGB values. Perfect for quick design and development tasks.</li>
-    <li>🤖 <strong>AI Hub:</strong> Your integrated artificial intelligence assistant for quick queries and brainstorming. Harness the power of AI directly from your desktop.</li>
+    <li>⚡ <strong>应用启动器（快捷方式）：</strong> 从侧边栏一键固定并启动你常用的应用。拖拽任意文件或应用即可创建快捷方式。</li>
+    <li>📋 <strong>剪贴板管理器（复制与粘贴）：</strong> 多槽位剪贴板，自动保存你的复制历史。单击即可访问并粘贴过去的剪贴内容。</li>
+    <li>📅 <strong>KoCalendar（日历）：</strong> 快速查看你的日程和重要日期。无需离开当前工作流即可保持条理。</li>
+    <li>✅ <strong>待办事项列表：</strong> 用简单有效的可勾选列表跟踪你的日常任务。直接在屏幕边缘高效管理你的目标。</li>
+    <li>📝 <strong>代码片段库：</strong> 存储和管理你常用的代码块或文本片段。需要时一键复制到剪贴板。</li>
+    <li>📸 <strong>截图工作室：</strong> 内置标注和编辑工具，即时捕获屏幕。无需打开外部软件即可保存或分享截图。</li>
+    <li>🧮 <strong>计算器：</strong> 一个简洁的弹出式计算器，随时进行快速数学运算。</li>
+    <li>🎨 <strong>取色器：</strong> 轻松从屏幕任意位置取色，获取 HEX 或 RGB 值。非常适合快速设计和开发。</li>
+    <li>🤖 <strong>AI Hub：</strong> 集成式人工智能助手，用于快速查询和头脑风暴。直接在桌面发挥 AI 的力量。</li>
 </ul>
 <br>
-<p><strong>⚙️ Settings & Customization</strong></p>
-<p>To configure KoBar to your exact needs, simply click the <strong>Settings icon ⚙️</strong> located at the top right of this note panel.</p>
+<p><strong>⚙️ 设置与个性化</strong></p>
+<p>如需将 KoBar 配置为完全符合你的需求，只需点击此笔记面板右上角的 <strong>设置图标 ⚙️</strong>。</p>
 <ul>
-    <li>📂 <strong>Workspaces:</strong> Save and load different sidebar feature layouts tailored for specific tasks (e.g., Coding, Designing, Casual). Switch between completely different KoBar setups with a single click.</li>
-    <li>🎨 <strong>Personalization:</strong> Make KoBar truly yours! You can freely change the application's interface language and customize the theme colors to match your personal style.</li>
+    <li>📂 <strong>工作区：</strong> 针对特定任务（例如编码、设计、休闲）保存和加载不同的侧边栏功能布局。单击即可在不同 KoBar 配置之间切换。</li>
+    <li>🎨 <strong>个性化：</strong> 让 KoBar 真正属于你！你可以自由定制主题颜色，匹配你的个人风格。</li>
 </ul>
 <br>
-<p>Enjoy using KoBar! 🚀</p>`
+<p>尽情使用 KoBar！🚀</p>`
     }
 ];
 
@@ -476,16 +470,7 @@ export const useAppStore = create<AppState>()(
 
             clipboardMonitoring: true,
             setClipboardMonitoring: (val) => set({ clipboardMonitoring: val }),
-            // Language
-            language: 'en',
-            setLanguage: (language) => set({ language }),
-            t: (key) => {
-                const state = get();
-                const lang = state.language || 'tr';
-                return (translations as Record<string, Record<string, string>>)[lang]?.[key]
-                    || (translations as Record<string, Record<string, string>>)['en'][key]
-                    || key;
-            },
+            t: (key) => translations.zh[key] || key,
 
             // Mini Mode
             isMiniMode: false,
@@ -930,7 +915,6 @@ export const useAppStore = create<AppState>()(
 
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
-                language: state.language,
                 showTooltips: state.showTooltips,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,

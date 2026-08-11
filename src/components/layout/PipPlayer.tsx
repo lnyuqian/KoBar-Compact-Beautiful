@@ -100,7 +100,7 @@ const PipPlayer: React.FC = () => {
     // Using iframe instead of <webview> fixes YouTube Error 153 (automation detection)
     useEffect(() => {
         if (!containerRef.current || !finalUrl) {
-            setError('No video URL provided.');
+            setError('未提供视频 URL。');
             setLoading(false);
             return;
         }
@@ -230,7 +230,7 @@ const PipPlayer: React.FC = () => {
                         border: '1px solid rgba(244,161,37,0.4)',
                         background: 'rgba(244,161,37,0.12)',
                         color: '#f4a125', fontSize: 12, cursor: 'pointer',
-                    }}>Close</button>
+                    }}>关闭</button>
                 </div>
             )}
 

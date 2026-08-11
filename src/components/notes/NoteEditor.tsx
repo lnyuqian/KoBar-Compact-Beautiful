@@ -48,7 +48,7 @@ const ParagraphWithCopy = Node.create({
             const btn = document.createElement('button');
             btn.className = 'para-copy-btn material-symbols-outlined no-drag-region';
             btn.textContent = 'content_copy';
-            btn.title = 'Copy paragraph';
+            btn.title = '复制段落';
             btn.addEventListener('mousedown', (e) => e.preventDefault());
             btn.addEventListener('click', () => {
                 const text = node.textContent || '';
@@ -61,8 +61,8 @@ const ParagraphWithCopy = Node.create({
                         document.execCommand('copy');
                         document.body.removeChild(ta);
                     } catch (err) {
-                        console.error('Copy failed:', err);
-                        window.api?.sendNotification?.('Copy Failed', 'Could not copy the paragraph text.');
+                        console.error('复制失败:', err);
+                        window.api?.sendNotification?.('复制失败', '无法复制段落文本。');
                     }
                 };
                 if (window.api?.writeToClipboard) {
@@ -267,13 +267,13 @@ const NoteEditor: React.FC = React.memo(() => {
                 try {
                     const result = await window.api.saveNoteAsText(activeNote.title, textContent);
                     if (result.success) {
-                        window.api.sendNotification('Note Exported', `Saved as ${result.path?.split('\\').pop() || result.path?.split('/').pop()}`);
+                        window.api.sendNotification('笔记已导出', `Saved as ${result.path?.split('\\').pop() || result.path?.split('/').pop()}`);
                     } else if (result.reason !== 'Canceled') {
-                        window.api.sendNotification('Export Failed', 'Failed to save the note as text.');
+                        window.api.sendNotification('导出失败', '无法将笔记保存为文本。');
                     }
                 } catch (err) {
-                    console.error('Error saving note:', err);
-                    window.api?.sendNotification?.('Export Failed', 'An unexpected error occurred while saving the note.');
+                    console.error('保存笔记出错:', err);
+                    window.api?.sendNotification?.('导出失败', '保存笔记时发生意外错误。');
                 }
             }
         };
@@ -350,7 +350,7 @@ const NoteEditor: React.FC = React.memo(() => {
                     <button
                         onClick={triggerImagePicker}
                         className="hover:text-slate-200 transition-colors cursor-pointer mt-[2px]"
-                        title="Insert Image"
+                        title="插入图片"
                     >
                         <span className="material-symbols-outlined text-[18px] text-[#a3a3a3]">image</span>
                     </button>
@@ -362,10 +362,10 @@ const NoteEditor: React.FC = React.memo(() => {
                         <span className="material-symbols-outlined text-[14px] select-none text-[#a3a3a3]">format_size</span>
                         <span className="text-xs font-semibold text-slate-300 select-none">{editorFontSize}px</span>
                         <div className="flex flex-col gap-[3px]">
-                            <button onClick={() => adjustFontSize(1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="Larger font">
+                            <button onClick={() => adjustFontSize(1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="增大字体">
                                 <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-b-[8px] border-l-transparent border-r-transparent border-b-current" />
                             </button>
-                            <button onClick={() => adjustFontSize(-1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="Smaller font">
+                            <button onClick={() => adjustFontSize(-1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="减小字体">
                                 <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-current" />
                             </button>
                         </div>

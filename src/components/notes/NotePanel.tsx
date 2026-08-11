@@ -54,8 +54,8 @@ const NotePanel: React.FC = () => {
             document.body.appendChild(ta);
             ta.select();
             try { document.execCommand('copy'); } catch (err) {
-                console.error('Copy failed:', err);
-                window.api?.sendNotification?.('Copy Failed', 'Could not copy the note text.');
+                console.error('复制失败:', err);
+                window.api?.sendNotification?.('复制失败', '无法复制笔记文本。');
             }
             document.body.removeChild(ta);
         };
@@ -316,7 +316,7 @@ const NotePanel: React.FC = () => {
                         <button
                             onClick={handleCopyNote}
                             className={`p-0.5 transition-all flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer ${copied ? 'text-[#4ade80]' : 'text-[#989898] hover:text-primary'}`}
-                            title="Copy Note"
+                            title="复制笔记"
                         >
                             <span
                                 className="material-symbols-rounded"

@@ -29,7 +29,7 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
 
     const handleActivate = async () => {
         if (!licenseKey.trim()) {
-            setError('Please enter a license key.');
+            setError('请输入许可证密钥。');
             return;
         }
 
@@ -43,7 +43,7 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
 
             if (response.status === 403) {
                 if (result.error === 'device_mismatch') {
-                    const confirmTransfer = window.confirm('This license is active on another device. Do you want to unlink the old device and transfer the license here?');
+                    const confirmTransfer = window.confirm('该许可证已在另一台设备上激活。是否要解除旧设备并在此处转移许可证？');
                     if (confirmTransfer) {
                         response = await checkLicense(licenseKey.trim(), hwid, true);
                         result = await response.json();
@@ -52,7 +52,7 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
                         return; // User cancelled
                     }
                 } else {
-                    throw new Error(result.error || 'Activation failed');
+                    throw new Error(result.error || '激活失败');
                 }
             }
 
@@ -61,11 +61,11 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
                 localStorage.setItem('kobar_license_key', licenseKey.trim());
                 onSuccess();
             } else {
-                setError(result.error || 'Invalid license key.');
+                setError(result.error || '无效的许可证密钥。');
             }
         } catch (err: any) {
-            console.error('License check error:', err);
-            setError(err.message || 'Network error occurred. Please try again.');
+            console.error('许可证检查出错:', err);
+            setError(err.message || '发生网络错误，请重试。');
         } finally {
             setIsLoading(false);
         }
@@ -77,8 +77,8 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
                  style={{ backgroundColor: 'var(--theme-surface)', borderColor: 'var(--theme-border)' }}>
                 
                 <div className="flex flex-col items-center mb-6">
-                    <h2 className="text-xl font-bold text-primary">Activate KoBar</h2>
-                    <p className="text-sm text-slate-400 text-center mt-2">Enter your license key to continue using KoBar on this device.</p>
+                    <h2 className="text-xl font-bold text-primary">激活 KoBar</h2>
+                    <p className="text-sm text-slate-400 text-center mt-2">输入许可证密钥以在此设备上继续使用 KoBar。</p>
                 </div>
 
                 <div className="space-y-4">
@@ -118,7 +118,7 @@ const LicenseActivationModal: React.FC<LicenseActivationModalProps> = ({ onSucce
                             ) : (
                                 <span className="material-symbols-outlined text-[18px]">key</span>
                             )}
-                            {isLoading ? 'Verifying...' : 'Activate'}
+                            {isLoading ? '验证中...' : '激活'}
                         </button>
                     </div>
                 </div>

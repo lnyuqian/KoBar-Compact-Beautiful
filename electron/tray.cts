@@ -46,11 +46,11 @@ export function createTray(options: TrayOptions): Tray {
 
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: 'Show/Hide KoBar',
+            label: '显示/隐藏 KoBar',
             click: toggleWindow
         },
         {
-            label: 'Settings',
+            label: '设置',
             click: () => {
                 const win = getWindow();
                 if (win) {
@@ -60,12 +60,12 @@ export function createTray(options: TrayOptions): Tray {
             }
         },
         {
-            label: 'Teleport to Center',
+            label: '传送到中心',
             click: onTeleport
         },
         { type: 'separator' },
         {
-            label: 'Quit',
+            label: '退出',
             click: () => {
                 app.quit();
             }

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore, applyCustomThemeCSS } from '../../store/useAppStore';
-import { getLanguageOptions } from '../../i18n/translations';
 function hsvToHex(h: number, s: number, v: number): string {
     s /= 100; v /= 100;
     const i = Math.floor(h / 60);
@@ -55,7 +54,7 @@ function hexToHsv(hex: string): [number, number, number] {
 }
 import { IS_STORE_BUILD } from '../../App';
 import Accordion from './Accordion';
-const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
+const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!' || note.title === '欢迎使用 KoBar！';
 
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
@@ -63,14 +62,11 @@ const SettingsPanel: React.FC = () => {
     const setTheme = useAppStore(state => state.setTheme);
     const customThemeColor = useAppStore(state => state.customThemeColor);
     const setCustomThemeColor = useAppStore(state => state.setCustomThemeColor);
-    const language = useAppStore(state => state.language);
-    
     // Refs for file inputs
     const importSettingsRef = useRef<HTMLInputElement>(null);
     const importDataRef = useRef<HTMLInputElement>(null);
 
 
-    const setLanguage = useAppStore(state => state.setLanguage);
     const t = useAppStore(state => state.t);
     const launchAtStartup = useAppStore(state => state.launchAtStartup);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
@@ -219,7 +215,7 @@ const SettingsPanel: React.FC = () => {
         if (window.api?.onUpdateError) {
             unsubscribeError = window.api.onUpdateError((err) => {
                 setUpdateStatus('error');
-                setUpdateErrorMessage(err || 'Update failed to download');
+                setUpdateErrorMessage(err || '更新下载失败');
             });
         }
 
@@ -245,7 +241,7 @@ const SettingsPanel: React.FC = () => {
 
             if (result.status === 'error') {
                 setUpdateStatus('error');
-                setUpdateErrorMessage(result.message || 'Unknown update check error');
+                setUpdateErrorMessage(result.message || '未知的更新检查错误');
                 return;
             }
 
@@ -259,7 +255,7 @@ const SettingsPanel: React.FC = () => {
             }
         } catch (err: any) {
             setUpdateStatus('error');
-            setUpdateErrorMessage(err?.message || 'Failed to check for updates');
+            setUpdateErrorMessage(err?.message || '检查更新失败');
         }
     };
 
@@ -359,7 +355,6 @@ const SettingsPanel: React.FC = () => {
             payload = {
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
-                language: state.language,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
                 teleportShortcut: state.teleportShortcut,
@@ -399,12 +394,12 @@ const SettingsPanel: React.FC = () => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            window.api?.sendNotification?.('Export Complete', `Successfully downloaded ${type} export.`);
+            window.api?.sendNotification?.('导出完成', `已成功下载${type} 导出文件。`);
         } else if (method === 'email') {
             const subject = encodeURIComponent(`KoBar ${type === 'settings' ? 'Settings' : 'Data'} Export`);
             const body = encodeURIComponent(jsonString);
             window.api?.openExternal(`mailto:?subject=${subject}&body=${body}`);
-            window.api?.sendNotification?.('Export Ready', `Opening your email client to send ${type} export.`);
+            window.api?.sendNotification?.('导出就绪', `正在打开邮件客户端发送${type} 导出文件。`);
         }
     };
 
@@ -419,7 +414,7 @@ const SettingsPanel: React.FC = () => {
                 const parsed = JSON.parse(jsonStr);
                 
                 if (typeof parsed !== 'object' || parsed === null) {
-                    throw new Error('Invalid JSON structure');
+                    throw new Error('无效的 JSON 结构');
                 }
 
                 if (type === 'data') {
@@ -449,10 +444,10 @@ const SettingsPanel: React.FC = () => {
                     });
                 }
                 
-                window.api?.sendNotification?.('Import Complete', `Successfully imported ${type}.`);
+                window.api?.sendNotification?.('导入完成', `已成功导入${type}。`);
             } catch (err) {
-                console.error('Import failed', err);
-                window.api?.sendNotification?.('Import Failed', `Could not parse the ${type} import file.`);
+                console.error('导入失败', err);
+                window.api?.sendNotification?.('导入失败', `无法解析${type} 导入文件。`);
             }
         };
         reader.readAsText(file);
@@ -461,14 +456,16 @@ const SettingsPanel: React.FC = () => {
         event.target.value = '';
     };
 
-    const localizedLanguages = getLanguageOptions(language);
-
     return (
         <div 
             ref={scrollRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-8 pl-10 pb-4 custom-scrollbar relative" 
-            style={{ backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)' }}
+            className="flex-1 overflow-y-auto py-8 pb-4 custom-scrollbar relative" 
+            style={{ 
+                paddingLeft: '4%', 
+                paddingRight: '4%', 
+                backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)' 
+            }}
         >
             <h2 className="text-2xl font-semibold text-slate-200 mb-8">{t('settings')}</h2>
 
@@ -517,7 +514,7 @@ const SettingsPanel: React.FC = () => {
 
                                 <div className="flex flex-col gap-3">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-sm text-slate-400 font-medium">{language === 'tr' ? 'KoBar Genişliği' : 'KoBar Width'}</label>
+                                        <label className="text-sm text-slate-400 font-medium">侧边栏宽度</label>
                                         <span className="text-base font-bold text-primary">{sidebarWidth}px</span>
                                     </div>
                                     <input
@@ -537,7 +534,7 @@ const SettingsPanel: React.FC = () => {
 
                                 <div className="flex flex-col gap-3">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-sm text-slate-400 font-medium">{language === 'tr' ? 'İkon Boyutu' : 'Icon Size'}</label>
+                                        <label className="text-sm text-slate-400 font-medium">图标大小</label>
                                         <span className="text-base font-bold text-primary">{Math.round(iconScale * 100)}%</span>
                                     </div>
                                     <input
@@ -648,32 +645,6 @@ const SettingsPanel: React.FC = () => {
                         {/* Theme & Language Settings Area */}
                         <Accordion title={t('appearance')} icon="palette" defaultOpen={true}>
                             <div className="flex flex-col gap-6">
-                        {/* Language Selection */}
-                        <div className="flex flex-col gap-3">
-                            <label className="text-sm text-slate-400 font-medium">{t('language')}</label>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                                {localizedLanguages.map((lang) => (
-                                    <button
-                                        key={lang.code}
-                                        onClick={() => setLanguage(lang.code)}
-                                        className={`px-3 py-2 text-left text-sm rounded-lg transition-colors border no-drag-region ${language === lang.code
-                                            ? 'bg-primary/20 border-primary text-primary font-medium'
-                                            : `border-transparent text-slate-300 hover:text-slate-200 ${design === 'style2' ? 'hover:bg-white/5' : 'hover:bg-[#2a241c]'}`
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span>{lang.name}</span>
-                                            {language === lang.code && (
-                                                <span className="material-symbols-outlined text-[16px]">check</span>
-                                            )}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="w-full h-px" style={{ backgroundColor: 'var(--theme-border)' }}></div>
-
                         {/* Design Selection */}
                         <div className="flex flex-col gap-3">
                             <label className="text-sm text-slate-400 font-medium">{t('designMode')}</label>
@@ -726,16 +697,16 @@ const SettingsPanel: React.FC = () => {
                             <label className="text-sm text-slate-400 font-medium">{t('themeColor')}</label>
                             <div className="grid grid-cols-5 gap-4 mt-2">
                                 {[
-                                    { id: 'ember', name: 'Ember', color: '#1a1a1a' },
-                                    { id: 'ocean', name: 'Ocean', color: '#4d4d4d' },
-                                    { id: 'sakura', name: 'Sakura', color: '#808080' },
-                                    { id: 'emerald', name: 'Emerald', color: '#b3b3b3' },
-                                    { id: 'midnight', name: 'Midnight', color: '#e6e6e6' },
-                                    { id: 'amethyst', name: 'Amethyst', color: '#ffffff' },
-                                    { id: 'crimson', name: 'Crimson', color: '#1a1a1a' },
-                                    { id: 'nord', name: 'Nord', color: '#4d4d4d' },
-                                    { id: 'coffee', name: 'Coffee', color: '#808080' },
-                                    { id: 'lavender', name: 'Lavender', color: '#b3b3b3' }
+                                    { id: 'ember', name: '余烬', color: '#1a1a1a' },
+                                    { id: 'ocean', name: '海洋', color: '#4d4d4d' },
+                                    { id: 'sakura', name: '樱花', color: '#808080' },
+                                    { id: 'emerald', name: '翡翠', color: '#b3b3b3' },
+                                    { id: 'midnight', name: '午夜', color: '#e6e6e6' },
+                                    { id: 'amethyst', name: '紫水晶', color: '#ffffff' },
+                                    { id: 'crimson', name: '深红', color: '#1a1a1a' },
+                                    { id: 'nord', name: '北欧', color: '#4d4d4d' },
+                                    { id: 'coffee', name: '咖啡', color: '#808080' },
+                                    { id: 'lavender', name: '薰衣草', color: '#b3b3b3' }
                                 ].map((themeItem) => (
                                     <button
                                         key={themeItem.id}
@@ -759,7 +730,7 @@ const SettingsPanel: React.FC = () => {
                             {/* Custom Theme Color Picker */}
                             <div className="mt-4 flex flex-col gap-3">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-xs text-slate-500 font-medium uppercase tracking-wider">{(t as any)('customTheme') || 'Custom Theme'}</label>
+                                    <label className="text-xs text-slate-500 font-medium uppercase tracking-wider">{(t as any)('customTheme') || '自定义主题'}</label>
                                     <div className="flex items-center gap-2">
                                         <div 
                                             className={`w-5 h-5 rounded-full ring-1 shadow-inner ${theme === 'custom' ? 'ring-primary' : 'ring-white/20'}`} 
@@ -871,7 +842,7 @@ const SettingsPanel: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-slate-400 text-[20px]">school</span>
-                                <span className="text-sm text-slate-300">Tutorial</span>
+                                <span className="text-sm text-slate-300">教程</span>
                             </div>
                             <button
                                 onClick={() => {
@@ -890,7 +861,7 @@ const SettingsPanel: React.FC = () => {
 
                 {/* Update Center Section */}
                 {!IS_STORE_BUILD && (
-                    <Accordion title={(t as any)('updateCenter') || 'Update Center'} icon="update" defaultOpen={false}>
+                    <Accordion title={(t as any)('updateCenter') || '更新中心'} icon="update" defaultOpen={false}>
                         <div className="flex flex-col gap-4 no-drag-region">
                             <div className="flex flex-col gap-4">
                                 {/* Current version label */}
@@ -952,10 +923,10 @@ const SettingsPanel: React.FC = () => {
                                             <span className="material-symbols-outlined text-amber-500 text-[22px] shrink-0 mt-0.5">arrow_circle_down</span>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-xs text-amber-400 font-bold">
-                                                    {((t as any)('newVersionAvailable') || 'New Version Available: v{version}').replace('{version}', latestVersion)}
+                                                    {((t as any)('newVersionAvailable') || '新版本可用：v{version}').replace('{version}', latestVersion)}
                                                 </span>
                                                 <span className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                                                    An update is ready for download. Click below to begin the installation process.
+                                                    更新已准备就绪，可下载。点击下方按钮开始安装。
                                                 </span>
                                             </div>
                                         </div>
@@ -967,7 +938,7 @@ const SettingsPanel: React.FC = () => {
                                             }}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">download</span>
-                                            <span>{(t as any)('downloadAndInstall') || 'Download & Install Update'}</span>
+                                            <span>{(t as any)('downloadAndInstall') || '下载并安装更新'}</span>
                                         </button>
                                     </div>
                                 )}
@@ -977,7 +948,7 @@ const SettingsPanel: React.FC = () => {
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs text-slate-300 font-bold flex items-center gap-2">
                                                 <span className="material-symbols-outlined text-[16px] text-primary animate-pulse">downloading</span>
-                                                {((t as any)('downloadingUpdate') || 'Downloading Update...')}
+                                                {((t as any)('downloadingUpdate') || '正在下载更新...')}
                                             </span>
                                             <span className="text-xs font-mono font-bold text-primary">{downloadPercent}%</span>
                                         </div>
@@ -1009,10 +980,10 @@ const SettingsPanel: React.FC = () => {
                                             <span className="material-symbols-outlined text-green-500 text-[22px] shrink-0 mt-0.5">task_alt</span>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-xs text-green-400 font-bold">
-                                                    {((t as any)('downloadComplete') || 'Download Complete!')}
+                                                    {((t as any)('downloadComplete') || '下载完成！')}
                                                 </span>
                                                 <span className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                                                    {((t as any)('restartInstallDesc') || 'The update has been downloaded. Restart the application to apply the update.')}
+                                                    {((t as any)('restartInstallDesc') || '更新已下载。重启应用以应用更新。')}
                                                 </span>
                                             </div>
                                         </div>
@@ -1024,7 +995,7 @@ const SettingsPanel: React.FC = () => {
                                             }}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">restart_alt</span>
-                                            <span>{((t as any)('restartAndInstall') || 'Restart & Install Now')}</span>
+                                            <span>{((t as any)('restartAndInstall') || '立即重启并安装')}</span>
                                         </button>
                                     </div>
                                 )}
@@ -1071,14 +1042,14 @@ const SettingsPanel: React.FC = () => {
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">download</span>
-                                    {t('downloadJson') as string || 'Download JSON'}
+                                    {t('downloadJson') as string || '下载 JSON'}
                                 </button>
                                 <button
                                     onClick={() => handleExport('settings', 'email')}
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">mail</span>
-                                    {t('sendToEmail') as string || 'Send to Email'}
+                                    {t('sendToEmail') as string || '发送到邮箱'}
                                 </button>
                                 <input type="file" accept=".json" className="hidden" ref={importSettingsRef} onChange={(e) => handleImport('settings', e)} />
                                 <button
@@ -1086,7 +1057,7 @@ const SettingsPanel: React.FC = () => {
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">upload</span>
-                                    {t('import') as string || 'Import'}
+                                    {t('import') as string || '导入'}
                                 </button>
                             </div>
                         </div>
@@ -1107,14 +1078,14 @@ const SettingsPanel: React.FC = () => {
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">download</span>
-                                    {t('downloadJson') as string || 'Download JSON'}
+                                    {t('downloadJson') as string || '下载 JSON'}
                                 </button>
                                 <button
                                     onClick={() => handleExport('data', 'email')}
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">mail</span>
-                                    {t('sendToEmail') as string || 'Send to Email'}
+                                    {t('sendToEmail') as string || '发送到邮箱'}
                                 </button>
                                 <input type="file" accept=".json" className="hidden" ref={importDataRef} onChange={(e) => handleImport('data', e)} />
                                 <button
@@ -1122,7 +1093,7 @@ const SettingsPanel: React.FC = () => {
                                     className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">upload</span>
-                                    {t('import') as string || 'Import'}
+                                    {t('import') as string || '导入'}
                                 </button>
                             </div>
                         </div>
