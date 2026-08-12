@@ -36,6 +36,9 @@ export function getGhostBounds(): { x: number; y: number; width: number; height:
 
 // Center of the ghost window in window-relative coordinates.
 export function getGhostCenter(): { x: number; y: number } {
-    const b = getGhostBounds();
-    return { x: b.width / 2, y: b.height / 2 };
+    // The window is anchored to the primary display, so its center is exactly
+    // half of the primary workArea -- valid at any resolution/display layout.
+    const primary = screen.getPrimaryDisplay();
+    const wa = primary.workArea;
+    return { x: wa.width / 2, y: wa.height / 2 };
 }

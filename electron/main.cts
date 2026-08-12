@@ -507,13 +507,24 @@ ipcMain.handle('ask-for-update', async (event, { title, message, yesLabel, noLab
     return result.response === 0;
 });
 
-ipcMain.handle('save-note-as-text', async (event, { title, content }) => {
+ipcMain.handle('save-note-as-text', async (event, { title, content, savePath, isFavorite }) => {
+    console.log('[SaveNote] title=' + title + ' savePath=' + savePath + ' fav=' + isFavorite);
     if (!mainWindow) return { success: false, reason: 'No main window' };
-    
-    // Sanitize title for filename
-    const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    
+
+    // Sanitize title for filename; append a suffix when the note is favorited
+    // Favorited notes get a heart symbol in the filename (NTFS-safe).
+    const baseTitle = (title || 'note').replace(/[^a-z0-9一-鿿]/gi, '_');
+    const safeTitle = isFavorite ? baseTitle + '♥' : baseTitle;
+
     try {
+        // When a save folder is configured, save directly (no dialog).
+        if (savePath) {
+            const filePath = path.join(savePath, `${safeTitle || 'note'}.txt`);
+            await fs.promises.writeFile(filePath, content, 'utf8');
+            return { success: true, path: filePath };
+        }
+
+        // No save folder configured: fall back to a save dialog.
         const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
             title: '将笔记另存为文本',
             defaultPath: `${safeTitle || 'note'}.txt`,
@@ -532,6 +543,57 @@ ipcMain.handle('save-note-as-text', async (event, { title, content }) => {
     } catch (err: any) {
         console.error('Failed to save note:', err);
         return { success: false, reason: err.message || 'Unknown error' };
+    }
+});
+ipcMain.handle('select-note-save-folder', async () => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showOpenDialog(mainWindow, {
+        title: '选择笔记保存文件夹',
+        properties: ['openDirectory', 'createDirectory']
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true };
+    }
+    return { canceled: false, path: result.filePaths[0] };
+});
+
+// Return the user's Documents folder as the default note save location.
+ipcMain.handle('get-default-note-save-path', () => {
+    return app.getPath('documents');
+});
+
+// Auto-sync: write every note as a .md file into the configured folder.
+// Called whenever the save folder is set/changed or notes are updated.
+ipcMain.handle('save-notes-to-dir', async (_event, { dir, notes }) => {
+    console.log('[NoteSync] dir=' + JSON.stringify(dir) + ' notes=' + (notes || []).length);
+    try {
+        await fs.promises.mkdir(dir, { recursive: true });
+        // Files currently present in the folder (this sync owns *.md files).
+        let existing: string[] = [];
+        try {
+            existing = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.md'));
+        } catch { /* dir may not exist yet */ }
+        const expected = new Set<string>();
+        for (const note of notes || []) {
+            if (!note || note.isSettings || !note.title) continue;
+            // Sanitize title for filename; append a star when the note is favorited.
+            const base = note.title.replace(/[^a-z0-9\u4e00-\u9fff]/gi, '_');
+            // Favorited notes get a heart symbol in the filename (NTFS-safe).
+            const fileName = (note.isFavorite ? base + '♥' : base) + '.md';
+            expected.add(fileName);
+            const filePath = path.join(dir, fileName);
+            await fs.promises.writeFile(filePath, note.content, 'utf8');
+        }
+        // Remove .md files that no longer correspond to any note (deleted notes).
+        for (const f of existing) {
+            if (!expected.has(f)) {
+                try { await fs.promises.unlink(path.join(dir, f)); } catch { /* ignore */ }
+            }
+        }
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to auto-save notes:', err);
+        return { success: false, reason: String(err) };
     }
 });
 

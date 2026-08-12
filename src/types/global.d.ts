@@ -114,7 +114,10 @@ declare global {
             onLlmStreamError: (callback: (data: { chatId: string, messageId: string, error: string }) => void) => () => void;
             
             // Notes
-            saveNoteAsText: (title: string, content: string) => Promise<{ success: boolean; path?: string; reason?: string }>;
+            saveNoteAsText: (title: string, content: string, savePath?: string, isFavorite?: boolean) => Promise<{ success: boolean; path?: string; reason?: string }>;
+            selectNoteSaveFolder: () => Promise<{ canceled: boolean; path?: string }>;
+            getDefaultNoteSavePath: () => Promise<string>;
+            saveNotesToDir: (dir: string, notes: Array<{ title: string; content: string; isSettings?: boolean; isFavorite?: boolean }>) => Promise<{ success: boolean; reason?: string }>;
 
             // Auto Updater
             onUpdateAvailable: (callback: (version: string) => void) => (() => void);

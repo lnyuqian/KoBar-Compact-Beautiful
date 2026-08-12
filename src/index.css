@@ -501,13 +501,16 @@ hr {
 
 .md-render ul,
 .md-render ol {
-  padding-left: 1.5rem;
+  padding-left: 1.1rem;
   margin-bottom: 0.75rem;
 }
 
 .md-render ul { list-style-type: disc; }
 .md-render ol { list-style-type: decimal; }
-.md-render li { margin-bottom: 0.25rem; }
+.md-render li {
+  margin-bottom: 0.125rem;
+  list-style-position: inside;
+}
 .md-render li::marker { color: var(--theme-marker); }
 /* List items render as <li><p>…</p></li> in react-markdown: zero the inner
    paragraph margins so row spacing is controlled by li only */

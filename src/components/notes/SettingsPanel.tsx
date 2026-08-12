@@ -58,7 +58,6 @@ const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to
 
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
-    const theme = useAppStore(state => state.theme);
     const setTheme = useAppStore(state => state.setTheme);
     const customThemeColor = useAppStore(state => state.customThemeColor);
     const setCustomThemeColor = useAppStore(state => state.setCustomThemeColor);
@@ -73,6 +72,9 @@ const SettingsPanel: React.FC = () => {
     const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
     const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
     const setClipboardMonitoring = useAppStore(state => state.setClipboardMonitoring);
+    const noteSavePath = useAppStore(state => state.noteSavePath);
+    const setNoteSavePath = useAppStore(state => state.setNoteSavePath);
+    const design = useAppStore(state => state.design);
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const setToggleWidth = useAppStore(state => state.setToggleWidth);
@@ -86,10 +88,6 @@ const SettingsPanel: React.FC = () => {
     const setEditorFontSize = useAppStore(state => state.setEditorFontSize);
     const editorLineHeight = useAppStore(state => state.editorLineHeight);
     const setEditorLineHeight = useAppStore(state => state.setEditorLineHeight);
-    const design = useAppStore(state => state.design);
-    const setDesign = useAppStore(state => state.setDesign);
-    const glassOpacity = useAppStore(state => state.glassOpacity);
-    const setGlassOpacity = useAppStore(state => state.setGlassOpacity);
 
     const isPopupSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
@@ -435,11 +433,14 @@ const SettingsPanel: React.FC = () => {
                     // Apply parsed settings directly to the store
                     useAppStore.setState(parsed);
                     
-                    // Switch to mini mode and teleport to center as if it's a fresh start
+                    // Switch to mini mode and teleport to center as if it's a fresh start.
+                    // The window is anchored to the primary display, so the horizontal
+                    // center is half of the visible screen width at any resolution.
                     const state = useAppStore.getState();
+                    const visibleWidth = state.screenBounds?.width ?? window.innerWidth;
                     const visibleHeight = state.screenBounds?.height ?? 800;
                     state.setMiniMode(true, { 
-                        x: state.isMac ? Math.floor(window.innerWidth / 2) : 3000, 
+                        x: Math.floor(visibleWidth / 2), 
                         y: Math.floor(visibleHeight / 2) 
                     });
                 }
@@ -471,6 +472,47 @@ const SettingsPanel: React.FC = () => {
 
             <div className="space-y-10">
 
+                {/* --- TOP: Document Save Path --- */}
+                <div>
+                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4 px-2">文档保存路径</h3>
+                    <div className="space-y-4">
+                        <Accordion title="文档保存路径" icon="folder" defaultOpen={true}>
+                            <div className="flex flex-col gap-3">
+                                <span className="text-xs text-slate-500">笔记另存为文本文件时的默认保存文件夹。留空则使用系统默认位置（文档目录）。</span>
+                                <div className="flex items-center gap-2 bg-black/20 border border-white/5 rounded-lg px-3 py-2">
+                                    <span className="material-symbols-outlined text-[16px] text-slate-400 shrink-0">folder</span>
+                                    <span className="flex-1 text-xs text-slate-300 font-mono truncate">{noteSavePath || '未设置（默认：文档目录）'}</span>
+                                </div>
+                                <div className="flex gap-2 mt-1">
+                                    <button
+                                        onClick={async () => {
+                                            const result = await window.api?.selectNoteSaveFolder?.();
+                                            if (result && !result.canceled && result.path) {
+                                                setNoteSavePath(result.path);
+                                            }
+                                        }}
+                                        className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[16px]">folder_open</span>
+                                        选择文件夹
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            const def = await window.api?.getDefaultNoteSavePath?.();
+                                            setNoteSavePath(def || '');
+                                        }}
+                                        className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                                        恢复默认
+                                    </button>
+                                </div>
+                            </div>
+                        </Accordion>
+                    </div>
+                </div>
+
+                <div className="w-full h-px opacity-20" style={{ backgroundColor: 'var(--theme-border)' }}></div>
 
                 {/* --- MIDDLE SECTION: Application UI Configuration --- */}
                 <div>
@@ -639,150 +681,10 @@ const SettingsPanel: React.FC = () => {
 
                 {/* --- BOTTOM SECTION: Static Settings --- */}
                 <div>
-                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4 px-2">{t('appearance')} & {t('settings')}</h3>
+                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4 px-2">{t('settings')}</h3>
                     <div className="space-y-4">
                         
                         {/* Theme & Language Settings Area */}
-                        <Accordion title={t('appearance')} icon="palette" defaultOpen={true}>
-                            <div className="flex flex-col gap-6">
-                        {/* Design Selection */}
-                        <div className="flex flex-col gap-3">
-                            <label className="text-sm text-slate-400 font-medium">{t('designMode')}</label>
-                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 no-drag-region">
-                                <button
-                                    onClick={() => setDesign('style1')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${design === 'style1'
-                                        ? 'bg-primary text-slate-900 shadow-lg'
-                                        : 'text-slate-400 hover:text-slate-200'
-                                        }`}
-                                >
-                                    {t('designStyle1')}
-                                </button>
-                                <button
-                                    onClick={() => setDesign('style2')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${design === 'style2'
-                                        ? 'bg-primary text-slate-900 shadow-lg'
-                                        : 'text-slate-400 hover:text-slate-200'
-                                        }`}
-                                >
-                                    {t('designStyle2')}
-                                </button>
-                            </div>
-                        </div>
-
-                        {design === 'style2' && (
-                            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-sm text-slate-400 font-medium">{t('glassOpacity')}</label>
-                                    <span className="text-base font-bold text-primary">{glassOpacity}%</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="10"
-                                    max="90"
-                                    value={glassOpacity}
-                                    onChange={(e) => setGlassOpacity(parseInt(e.target.value))}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
-                                    style={{ accentColor: 'var(--theme-primary)' }}
-                                />
-                            </div>
-                        )}
-
-                        <div className="w-full h-px" style={{ backgroundColor: 'var(--theme-border)' }}></div>
-
-
-                        {/* Theme Selection */}
-                        <div className="flex flex-col gap-3">
-                            <label className="text-sm text-slate-400 font-medium">{t('themeColor')}</label>
-                            <div className="grid grid-cols-5 gap-4 mt-2">
-                                {[
-                                    { id: 'ember', name: '余烬', color: '#1a1a1a' },
-                                    { id: 'ocean', name: '海洋', color: '#4d4d4d' },
-                                    { id: 'sakura', name: '樱花', color: '#808080' },
-                                    { id: 'emerald', name: '翡翠', color: '#b3b3b3' },
-                                    { id: 'midnight', name: '午夜', color: '#e6e6e6' },
-                                    { id: 'amethyst', name: '紫水晶', color: '#ffffff' },
-                                    { id: 'crimson', name: '深红', color: '#1a1a1a' },
-                                    { id: 'nord', name: '北欧', color: '#4d4d4d' },
-                                    { id: 'coffee', name: '咖啡', color: '#808080' },
-                                    { id: 'lavender', name: '薰衣草', color: '#b3b3b3' }
-                                ].map((themeItem) => (
-                                    <button
-                                        key={themeItem.id}
-                                        onClick={() => setTheme(themeItem.id as any)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all no-drag-region ${theme === themeItem.id
-                                            ? 'ring-2 ring-offset-2 ring-offset-[#323232] scale-110 shadow-lg'
-                                            : 'hover:scale-105 opacity-80 hover:opacity-100'
-                                            }`}
-                                        style={{
-                                            backgroundColor: themeItem.color
-                                        }}
-                                        title={themeItem.name}
-                                    >
-                                        {theme === themeItem.id && (
-                                            <span className="material-symbols-outlined text-white text-[18px] drop-shadow-md">check</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            {/* Custom Theme Color Picker */}
-                            <div className="mt-4 flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs text-slate-500 font-medium uppercase tracking-wider">{(t as any)('customTheme') || '自定义主题'}</label>
-                                    <div className="flex items-center gap-2">
-                                        <div 
-                                            className={`w-5 h-5 rounded-full ring-1 shadow-inner ${theme === 'custom' ? 'ring-primary' : 'ring-white/20'}`} 
-                                            style={{ backgroundColor: customThemeColor }}
-                                        ></div>
-                                        <span className="text-xs font-mono text-slate-400 uppercase">{customThemeColor || '#F4A125'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3 bg-black/20 p-3 rounded-xl border border-white/5 no-drag-region">
-                                    {/* Custom Saturation/Value Square */}
-                                    <div 
-                                        ref={satRectRef}
-                                        className="w-full h-32 relative cursor-crosshair overflow-hidden rounded-md border border-white/10 shadow-inner"
-                                        style={{ backgroundColor: `hsl(${inlineHsv[0]}, 100%, 50%)` }}
-                                        onMouseDown={(e) => { setIsDraggingSat(true); handleSatMove(e); setTheme('custom'); }}
-                                        onTouchStart={(e) => { setIsDraggingSat(true); handleSatMove(e); setTheme('custom'); }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
-                                        {/* Cursor */}
-                                        <div 
-                                            className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg -translate-x-1/2 translate-y-1/2 pointer-events-none"
-                                            style={{ 
-                                                left: `${inlineHsv[1]}%`, 
-                                                bottom: `${inlineHsv[2]}%`,
-                                                backgroundColor: theme === 'custom' ? customThemeColor : 'transparent'
-                                            }}
-                                        ></div>
-                                    </div>
-
-                                    {/* Custom Hue Slider */}
-                                    <div 
-                                        ref={hueRectRef}
-                                        className="w-full h-3 rounded-full relative cursor-pointer border border-white/10 shadow-inner"
-                                        style={{ 
-                                            background: 'linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)' 
-                                        }}
-                                        onMouseDown={(e) => { setIsDraggingHue(true); handleHueMove(e); setTheme('custom'); }}
-                                        onTouchStart={(e) => { setIsDraggingHue(true); handleHueMove(e); setTheme('custom'); }}
-                                    >
-                                        {/* Cursor */}
-                                        <div 
-                                            className="absolute w-4 h-4 bg-white border border-slate-400 rounded-full shadow-md -top-0.5 -translate-x-1/2 pointer-events-none"
-                                            style={{ left: `${(inlineHsv[0] / 360) * 100}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Accordion>
                 
 
 

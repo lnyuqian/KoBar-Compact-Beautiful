@@ -11,9 +11,9 @@ let cachedGhostCenter: { x: number; y: number } | null = null;
 function getGhostCenter(): { x: number; y: number } {
     if (cachedGhostCenter) return cachedGhostCenter;
     try {
-        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: 3000, y: 2000 };
+        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) };
     } catch {
-        cachedGhostCenter = { x: 3000, y: 2000 };
+        cachedGhostCenter = { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) };
     }
     return cachedGhostCenter;
 }
@@ -266,6 +266,15 @@ const FloatingEye: React.FC = () => {
         if (!dragInitRef.current.dragged) {
             // Persist current Eye position so Sidebar opens at the same spot
             useAppStore.getState().setMiniMode(false, { x: posRef.current.x, y: posRef.current.y });
+            // Re-evaluate mouse click-through immediately: closing the eye re-lays out
+            // the UI, so the ignore-mouse state must be refreshed right away instead of
+            // waiting for the next mousemove (otherwise clicks pass through to the OS).
+            // Double rAF: first waits for the current frame, second runs after
+            // React has committed the layout change (sidebar reappears at the eye
+            // position), so elementFromPoint sees the updated UI.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => reEvaluateClickThrough());
+            });
         }
     };
 

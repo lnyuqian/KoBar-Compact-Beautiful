@@ -271,6 +271,9 @@ interface AppState {
     // Clipboard privacy: when false, the main process stops reading the clipboard
     clipboardMonitoring: boolean;
     setClipboardMonitoring: (val: boolean) => void;
+    // Default folder for saving notes as text files (empty = system default)
+    noteSavePath: string;
+    setNoteSavePath: (path: string) => void;
     t: (key: TranslationKeys) => string;
 
     currentMedia: MediaData | null;
@@ -360,7 +363,7 @@ export const useAppStore = create<AppState>()(
 
 
             // Theme
-            theme: 'midnight',
+            theme: 'amethyst',
             customThemeColor: '#f4a125',
             setTheme: (theme) => {
                 if (theme === 'custom') {
@@ -386,7 +389,7 @@ export const useAppStore = create<AppState>()(
             },
 
             // Design System
-            design: 'style1',
+            design: 'style2',
             setDesign: (design) => {
                 document.documentElement.setAttribute('data-design', design);
                 set({ design });
@@ -470,6 +473,8 @@ export const useAppStore = create<AppState>()(
 
             clipboardMonitoring: true,
             setClipboardMonitoring: (val) => set({ clipboardMonitoring: val }),
+            noteSavePath: '',
+            setNoteSavePath: (path) => set({ noteSavePath: path }),
             t: (key) => translations.zh[key] || key,
 
             // Mini Mode
@@ -508,10 +513,11 @@ export const useAppStore = create<AppState>()(
                                 y: pos.y - state.lastSidebarHeight + centerToBottom
                             };
 
-                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
-                            const screenW = state.screenBounds?.width ?? 1920;
-                            const isMacPlatform = state.isMac;
-                            const screenCenter = isMacPlatform ? (screenW / 2) : 3000;
+                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side.
+                            // The window is anchored to the primary display, so its center is exactly
+                            // half of the visible screen width -- works at any resolution.
+                            const screenW = state.screenBounds?.width ?? window.innerWidth;
+                            const screenCenter = screenW / 2;
                             const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
                             updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }
@@ -922,6 +928,7 @@ export const useAppStore = create<AppState>()(
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
                 clipboardMonitoring: state.clipboardMonitoring,
+                noteSavePath: state.noteSavePath,
 
 
 

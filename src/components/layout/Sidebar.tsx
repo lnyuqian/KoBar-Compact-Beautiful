@@ -16,9 +16,9 @@ let cachedGhostCenter: { x: number; y: number } | null = null;
 function getGhostCenter(): { x: number; y: number } {
     if (cachedGhostCenter) return cachedGhostCenter;
     try {
-        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: 3000, y: 2000 };
+        cachedGhostCenter = window.api?.getGhostCenterSync?.() ?? { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) };
     } catch {
-        cachedGhostCenter = { x: 3000, y: 2000 };
+        cachedGhostCenter = { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) };
     }
     return cachedGhostCenter;
 }
@@ -608,7 +608,14 @@ const Sidebar: React.FC = () => {
                     ),
                     ...(design === 'style2' && !isMac ? { backdropFilter: 'blur(16px)' } : {}),
                 }}
-                onClick={toggleNotePanel}
+                onClick={() => {
+                    toggleNotePanel();
+                    // Panel open/close re-lays out the UI; refresh click-through
+                    // immediately (double rAF lets React commit first).
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => reEvaluateClickThrough());
+                    });
+                }}
             >
                 <span className="material-symbols-outlined text-[20px]">
                     {orientation === 'horizontal'

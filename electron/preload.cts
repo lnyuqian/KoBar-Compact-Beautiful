@@ -107,7 +107,12 @@ contextBridge.exposeInMainWorld('api', {
     },
 
     // Notes
-    saveNoteAsText: (title: string, content: string) => ipcRenderer.invoke('save-note-as-text', { title, content }),
+    saveNoteAsText: (title: string, content: string, savePath?: string, isFavorite?: boolean) => ipcRenderer.invoke('save-note-as-text', { title, content, savePath, isFavorite }),
+    // Note save folder
+    selectNoteSaveFolder: () => ipcRenderer.invoke('select-note-save-folder') as Promise<{ canceled: boolean; path?: string }>,
+    getDefaultNoteSavePath: () => ipcRenderer.invoke('get-default-note-save-path') as Promise<string>,
+    saveNotesToDir: (dir: string, notes: Array<{ title: string; content: string; isSettings?: boolean; isFavorite?: boolean }>) =>
+        ipcRenderer.invoke('save-notes-to-dir', { dir, notes }) as Promise<{ success: boolean; reason?: string }>,
 
     // Pin Injector
     enterPinTargetingMode: () => ipcRenderer.send('enter-pin-targeting'),

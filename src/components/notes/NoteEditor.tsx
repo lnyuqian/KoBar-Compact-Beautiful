@@ -84,16 +84,14 @@ const ParagraphWithCopy = Node.create({
 });
 
 // Preset palette for the text color picker
-const COLOR_PRESETS = ['#ffffff', '#e5e5e5', '#a3a3a3', '#737373', '#f43f5e', '#f59e0b', '#facc15', '#4ade80', '#22d3ee', '#3b82f6', '#a78bfa', '#f472b6'];
+const COLOR_PRESETS = ['#a3a3a3', '#737373', '#f43f5e', '#f59e0b', '#facc15', '#4ade80', '#22d3ee', '#3b82f6', '#a78bfa', '#f472b6'];
 
 const NoteEditor: React.FC = React.memo(() => {
     const { activeNoteId, updateNoteTitle, t, design } = useAppStore();
     const edgePosition = useAppStore(state => state.edgePosition);
     const activeNote = useAppStore((state) => state.notes.find(n => n.id === activeNoteId));
     const editorFontSize = useAppStore((state) => state.editorFontSize);
-    const setEditorFontSize = useAppStore((state) => state.setEditorFontSize);
     const editorLineHeight = useAppStore((state) => state.editorLineHeight);
-    const setEditorLineHeight = useAppStore((state) => state.setEditorLineHeight);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isUpdatingFromStore = useRef(false);
     const cmViewRef = useRef<EditorView | null>(null);
@@ -103,7 +101,15 @@ const NoteEditor: React.FC = React.memo(() => {
 
     // Markdown ↔ HTML conversion helpers
     const htmlToMd = useCallback((html: string) => {
-        return turndown.turndown(html || '');
+        // turndown produces two cosmetic artifacts for lists that we normalize:
+        //  1. "<li><p>…</p></li>" yields a blank (whitespace-only) line between
+        //     list items, which makes the list look double-spaced. Remove it.
+        //  2. Markers are padded with alignment spaces ("-   item") instead of
+        //     the conventional single space ("- item").
+        return turndown
+            .turndown(html || '')
+            .replace(/(\n)[ \t]*\n/g, '\n')
+            .replace(/^([ \t]*)([-*+]) {2,}/gm, '$1$2 ');
     }, []);
 
     const mdToHtml = useCallback((md: string) => {
@@ -252,34 +258,6 @@ const NoteEditor: React.FC = React.memo(() => {
         e.target.value = '';
     }, [isEditing, editor]);
 
-    // Handle Ctrl+S / Cmd+S to save as text
-    useEffect(() => {
-        const handleKeyDown = async (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-                e.preventDefault();
-                if (!activeNote) return;
-                let textContent = '';
-                if (isEditing && cmViewRef.current) {
-                    textContent = cmViewRef.current.state.doc.toString();
-                } else if (editor) {
-                    textContent = editor.getText();
-                }
-                try {
-                    const result = await window.api.saveNoteAsText(activeNote.title, textContent);
-                    if (result.success) {
-                        window.api.sendNotification('笔记已导出', `Saved as ${result.path?.split('\\').pop() || result.path?.split('/').pop()}`);
-                    } else if (result.reason !== 'Canceled') {
-                        window.api.sendNotification('导出失败', '无法将笔记保存为文本。');
-                    }
-                } catch (err) {
-                    console.error('保存笔记出错:', err);
-                    window.api?.sendNotification?.('导出失败', '保存笔记时发生意外错误。');
-                }
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [editor, activeNote, isEditing]);
 
     const triggerImagePicker = useCallback(() => {
         fileInputRef.current?.click();
@@ -300,14 +278,6 @@ const NoteEditor: React.FC = React.memo(() => {
             editor.chain().focus().setColor(color).run();
         }
     }, [isEditing, editor]);
-
-    const adjustFontSize = useCallback((delta: number) => {
-        setEditorFontSize(Math.min(32, Math.max(12, editorFontSize + delta)));
-    }, [editorFontSize, setEditorFontSize]);
-
-    const adjustLineHeight = useCallback((delta: number) => {
-        setEditorLineHeight(Math.min(3, Math.max(1, Math.round((editorLineHeight + delta) * 20) / 20)));
-    }, [editorLineHeight, setEditorLineHeight]);
 
     if (!activeNote) return null;
 
@@ -357,34 +327,6 @@ const NoteEditor: React.FC = React.memo(() => {
 
                     <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
 
-                    {/* Font size */}
-                    <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] select-none text-[#a3a3a3]">format_size</span>
-                        <span className="text-xs font-semibold text-slate-300 select-none">{editorFontSize}px</span>
-                        <div className="flex flex-col gap-[3px]">
-                            <button onClick={() => adjustFontSize(1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="增大字体">
-                                <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-b-[8px] border-l-transparent border-r-transparent border-b-current" />
-                            </button>
-                            <button onClick={() => adjustFontSize(-1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="减小字体">
-                                <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-current" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Line height */}
-                    <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] select-none text-[#a3a3a3]">format_line_spacing</span>
-                        <span className="text-xs font-semibold text-slate-300 select-none">{editorLineHeight.toFixed(1)}</span>
-                        <div className="flex flex-col gap-[3px]">
-                            <button onClick={() => adjustLineHeight(0.1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="Larger line spacing">
-                                <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-b-[8px] border-l-transparent border-r-transparent border-b-current" />
-                            </button>
-                            <button onClick={() => adjustLineHeight(-0.1)} className="leading-none hover:text-slate-200 transition-colors cursor-pointer" title="Smaller line spacing">
-                                <span className="block w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-current" />
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Text color */}
                     <div className="flex items-center gap-1">
                         {COLOR_PRESETS.map((c) => (
@@ -393,19 +335,11 @@ const NoteEditor: React.FC = React.memo(() => {
                                 onClick={() => applyColor(c)}
                                 className="w-4 h-4 rounded-full transition-transform hover:scale-125 cursor-pointer"
                                 style={{ backgroundColor: c, border: '1px solid rgba(255,255,255,0.2)' }}
-                                title={`Text color ${c}`}
+                                title={`文字颜色 ${c}`}
                             />
                         ))}
                     </div>
 
-                    <div className="flex-1"></div>
-                    <button
-                        onClick={exitEditMode}
-                        className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all cursor-pointer"
-                        title={t('doneEditing')}
-                    >
-                        <span className="material-symbols-outlined text-[16px]">check</span>
-                    </button>
                 </div>
             )}
 
@@ -413,7 +347,7 @@ const NoteEditor: React.FC = React.memo(() => {
                 Double-click toggles: read → edit, edit → read */}
             {isEditing ? (
                 <div
-                    className="flex-1 min-h-0 flex flex-col no-drag-region"
+                    className="flex-1 min-h-0 flex flex-col no-drag-region relative"
                     onDoubleClick={exitEditMode}
                 >
                     <MarkdownEditor
@@ -425,6 +359,7 @@ const NoteEditor: React.FC = React.memo(() => {
                         paddingRightPercent={panelPaddingRight}
                         onChange={handleMdChange}
                         onReady={(view) => { cmViewRef.current = view; }}
+                        doneButton={{ onClick: exitEditMode }}
                     />
                 </div>
             ) : looksLikeMarkdown(activeNote.content) ? (
@@ -438,6 +373,7 @@ const NoteEditor: React.FC = React.memo(() => {
             ) : (
                 <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-drag-region" style={{ paddingLeft: `${panelPaddingLeft}%`, paddingRight: `${panelPaddingRight}%`, marginBottom: 0 }} onDoubleClick={enterEditMode} />
             )}
+
         </div>
     );
 });

@@ -63,7 +63,6 @@ const App: React.FC = () => {
 
   const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
   const isMiniMode = useAppStore(state => state.isMiniMode);
-  const theme = useAppStore(state => state.theme);
   const isLicensed = useAppStore(state => state.isLicensed);
   const setLicensed = useAppStore(state => state.setLicensed);
 
@@ -75,72 +74,65 @@ const App: React.FC = () => {
 
 
   const setIsTargetingMode = useAppStore(state => state.setIsTargetingMode);
-  const design = useAppStore(state => state.design);
   const sidebarWidth = useAppStore(state => state.sidebarWidth);
   const setPinnedWindowHwnd = useAppStore(state => state.setPinnedWindowHwnd);
   const isMac = useAppStore(state => state.isMac);
   const orientation = useAppStore(state => state.orientation);
   const screenBounds = useAppStore(state => state.screenBounds);
 
-  const customThemeColor = useAppStore(state => state.customThemeColor);
 
  const isHydrated = useAppStore(state => state.isHydrated);
   const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
+  const notes = useAppStore(state => state.notes);
+  const favorites = useAppStore(state => state.favorites);
+  const noteSavePath = useAppStore(state => state.noteSavePath);
 
-  // Apply persisted theme/design on mount
+  // Apply fixed appearance: Amethyst theme + glass (style2) design.
+  // Theme/design settings were removed from the UI, so these are hard-coded.
   useEffect(() => {
     if (!isHydrated) return; // Wait until store is ready from disk
+    document.documentElement.setAttribute('data-theme', 'amethyst');
+    document.documentElement.setAttribute('data-design', 'style2');
+    // Keep the store in sync so internal UI (e.g. slider styles) uses glass style2.
+    useAppStore.getState().setTheme?.('amethyst');
+    useAppStore.getState().setDesign?.('style2');
+  }, [isHydrated]);
 
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-design', design);
-    
-    if (theme === 'custom' && customThemeColor) {
-      const color = customThemeColor.startsWith('#') ? customThemeColor : `#${customThemeColor}`;
-      const root = document.documentElement;
-      
-      const hexToHSL = (hex: string) => {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h = 0, s = 0;
-        const l = (max + min) / 2;
-        if (max !== min) {
-          const d = max - min;
-          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
+  // Auto-sync notes to the configured save folder.
+  // When a folder is set, immediately export every note; afterwards, debounce
+  // 5 minutes after each edit, then re-export all notes (and drop files for
+  // notes that were deleted).
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (!noteSavePath) return;
+
+    const sync = () => {
+      const st = useAppStore.getState();
+      const noteList = st.notes
+        .filter(n => !n.isSettings)
+        .map(n => ({
+          title: n.title,
+          content: n.content,
+          isSettings: false,
+          isFavorite: st.favorites.some(f => f.id === n.id),
+        }));
+      window.api?.saveNotesToDir?.(noteSavePath, noteList)
+        .then(res => {
+          if (res && !res.success) {
+            console.error('[NoteSync] failed:', res.reason);
           }
-        }
-        return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-      };
+        })
+        .catch(err => console.error('[NoteSync] error:', err));
+    };
 
-      const hslToHex = (h: number, s: number, l: number) => {
-        s /= 100; l /= 100;
-        const a = s * Math.min(l, 1 - l);
-        const f = (n: number) => {
-          const k = (n + h / 30) % 12;
-          const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-          return Math.round(255 * c).toString(16).padStart(2, '0');
-        };
-        return `#${f(0)}${f(8)}${f(4)}`;
-      };
+    // Sync immediately when the folder is first set / changed.
+    sync();
 
-      const { h, s } = hexToHSL(color);
-      const { h: pH, s: pS, l: pL } = hexToHSL(color);
-      root.style.setProperty('--theme-primary', color);
-      root.style.setProperty('--theme-bg-dark', hslToHex(h, Math.min(s, 22), 8));
-      root.style.setProperty('--theme-bg-base', hslToHex(h, Math.min(s, 22), 11));
-      root.style.setProperty('--theme-bg-light', hslToHex(h, Math.min(s, 28), 96));
-      root.style.setProperty('--theme-border', hslToHex(h, Math.min(s, 30), 22));
-      root.style.setProperty('--theme-surface', hslToHex(h, Math.min(s, 22), 5));
-      root.style.setProperty('--theme-accent-glow', `hsla(${pH}, ${pS}%, ${pL}%, 0.15)`);
-      root.style.setProperty('--theme-scrollbar', hslToHex(h, Math.min(s, 30), 22));
-      root.style.setProperty('--theme-marker', color);
-    }
-}, [theme, design, customThemeColor, isHydrated]);
+    // Debounced re-sync 5 minutes after notes/favorites change.
+    const timer = setTimeout(sync, 5 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [isHydrated, noteSavePath, notes, favorites]);
+
 
   // Clipboard privacy: sync the monitoring toggle with the main-process listener
   useEffect(() => {
@@ -227,9 +219,11 @@ const App: React.FC = () => {
     // Self-healing: periodically re-evaluate click-through at the last known cursor position.
     // Fixes the "UI becomes transparent after ~1h" scenario where no mousemove event arrives
     // to flip the ignore-mouse state back after a monitor sleep / external window move.
+    // Short interval also corrects click-through quickly after UI re-layout (e.g. panel
+    // open/close or sidebar position change) without waiting for the next mousemove.
     const clickThroughTimer = setInterval(() => {
       reEvaluateClickThrough();
-    }, 60000);
+    }, 1500);
     unsubs.push(() => clearInterval(clickThroughTimer));
     if (window.api?.onOpenSettings) {
       unsubs.push(window.api.onOpenSettings(() => {
