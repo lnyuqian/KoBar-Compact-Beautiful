@@ -6,7 +6,6 @@ import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 
 import TooltipButton from './TooltipButton';
 import { CartoonEye } from './MaskIcon';
-import EyeNotification from './EyeNotification';
 import dragIcon from '../../assets/icons/drag.svg';
 
 // The main process sizes the ghost window to the union of all displays and
@@ -48,7 +47,6 @@ const Sidebar: React.FC = () => {
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
-    const isHighlightingToggleNotes = useAppStore(state => state.isHighlightingToggleNotes);
 
 
     
@@ -572,7 +570,6 @@ const Sidebar: React.FC = () => {
                                 </span>
                             )}
                         </TooltipButton>
-                        <EyeNotification />
                     </div>
                 </div>
             </div>
@@ -581,7 +578,7 @@ const Sidebar: React.FC = () => {
                 label={t('toggleNotes')}
                 className={`absolute flex items-center justify-center transition-all shadow-2xl z-[60] 
                     ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
-                    ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-slate-400 hover:text-primary hover:bg-white/5'}`}
+                    text-slate-400 hover:text-primary hover:bg-white/5`}
                 style={{ 
                     backgroundColor: '#323232', 
                     borderColor: 'transparent',

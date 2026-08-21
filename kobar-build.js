@@ -29,10 +29,9 @@ async function runBuildSequence(isStore) {
     // Determine feature flags
     // If it's a store build, we generally disable these, but we'll follow settings if they are global.
     // However, store builds MUST NOT have auto-update. So we force it false for Store.
-    const autoUpdate = isStore ? false : settings.enableAutoUpdate;
     const licensing = isStore ? false : settings.enableLicensing;
 
-    log(`Preparing ${mode} configuration... (Version: ${settings.version}, Licensing: ${licensing}, Update: ${autoUpdate})`);
+    log(`Preparing ${mode} configuration... (Version: ${settings.version}, Licensing: ${licensing})`);
 
     // 1. Update package.json
     const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
@@ -57,10 +56,6 @@ async function runBuildSequence(isStore) {
     updateFile(mainPath, 
         /const IS_STORE_BUILD = (true|false);/, 
         `const IS_STORE_BUILD = ${isStore};`
-    );
-    updateFile(mainPath, 
-        /const ENABLE_AUTO_UPDATE = (true|false);/, 
-        `const ENABLE_AUTO_UPDATE = ${autoUpdate};`
     );
 
     // 3. Update App.tsx

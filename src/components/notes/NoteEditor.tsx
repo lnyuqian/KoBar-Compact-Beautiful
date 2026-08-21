@@ -88,7 +88,6 @@ const COLOR_PRESETS = ['#a3a3a3', '#737373', '#f43f5e', '#f59e0b', '#facc15', '#
 
 const NoteEditor: React.FC = React.memo(() => {
     const { activeNoteId, updateNoteTitle, t, design } = useAppStore();
-    const edgePosition = useAppStore(state => state.edgePosition);
     const activeNote = useAppStore((state) => state.notes.find(n => n.id === activeNoteId));
     const editorFontSize = useAppStore((state) => state.editorFontSize);
     const editorLineHeight = useAppStore((state) => state.editorLineHeight);
@@ -281,10 +280,9 @@ const NoteEditor: React.FC = React.memo(() => {
 
     if (!activeNote) return null;
 
-    // Keep the content column aligned with the two-column tab grid above:
-    // the screen-edge side keeps the larger inset (same rule as NotePanel).
-    const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
-    const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
+    // Keep the content column aligned: fixed 2% symmetric insets (content centered)
+    const panelPaddingLeft = 2;
+    const panelPaddingRight = 2;
 
     return (
         <div

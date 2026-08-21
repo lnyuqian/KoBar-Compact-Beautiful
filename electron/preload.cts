@@ -28,20 +28,6 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('reset-ui-position', handler);
         return () => ipcRenderer.removeListener('reset-ui-position', handler);
     },
-    // Clipboard Manager
-    startClipboardListener: () => ipcRenderer.send('start-clipboard-listener'),
-    stopClipboardListener: () => ipcRenderer.send('stop-clipboard-listener'),
-    onClipboardUpdate: (callback: (data: { type: string; content: string }) => void) => {
-        const handler = (_event: Electron.IpcRendererEvent, data: { type: string; content: string }) => callback(data);
-        ipcRenderer.on('clipboard-updated', handler);
-        // Return cleanup function
-        return () => {
-            ipcRenderer.removeListener('clipboard-updated', handler);
-        };
-    },
-    writeToClipboard: (data: { type: string; content: string }) => {
-        ipcRenderer.send('write-to-clipboard', data);
-    },
     // Mouse click-through for transparent window
     setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
     startEyeDropper: () => ipcRenderer.invoke('start-eyedropper'),
@@ -79,10 +65,6 @@ contextBridge.exposeInMainWorld('api', {
     getFileIcon: (path: string) => ipcRenderer.invoke('get-file-icon', path),
     launchFile: (path: string) => ipcRenderer.send('launch-file', path),
     getFilePath: (file: File) => webUtils.getPathForFile(file),
-
-    // Auto-launch
-    getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch') as Promise<boolean>,
-    setAutoLaunch: (enabled: boolean) => ipcRenderer.send('set-auto-launch', enabled),
 
     // Focus Audio
     getMelodyAudio: (name: string) => ipcRenderer.invoke('get-melody-audio', name) as Promise<string | null>,
@@ -186,45 +168,6 @@ contextBridge.exposeInMainWorld('api', {
     },
     getSmtcSource: () => ipcRenderer.invoke('get-smtc-source') as Promise<string>,
 
-
-    // KoCalendar
-
-    // Auto Updater
-    onUpdateAvailable: (callback: (version: string) => void) => {
-        const handler = (_event: any, version: string) => callback(version);
-        ipcRenderer.on('update-available', handler);
-        return () => ipcRenderer.removeListener('update-available', handler);
-    },
-    onUpdateDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => {
-        const handler = (_event: any, progress: any) => callback(progress);
-        ipcRenderer.on('update-download-progress', handler);
-        return () => {
-            ipcRenderer.removeListener('update-download-progress', handler);
-        };
-    },
-    onUpdateDownloadComplete: (callback: (version: string) => void) => {
-        const handler = (_event: any, version: string) => callback(version);
-        ipcRenderer.on('update-download-complete', handler);
-        return () => {
-            ipcRenderer.removeListener('update-download-complete', handler);
-        };
-    },
-    onUpdateError: (callback: (error: string) => void) => {
-        const handler = (_event: any, error: string) => callback(error);
-        ipcRenderer.on('update-error', handler);
-        return () => {
-            ipcRenderer.removeListener('update-error', handler);
-        };
-    },
-    askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => 
-        ipcRenderer.invoke('ask-for-update', { title, message, yesLabel, noLabel }) as Promise<boolean>,
-    downloadAndInstallUpdate: () => ipcRenderer.send('download-and-install-update'),
-    quitAndInstallUpdate: () => ipcRenderer.send('quit-and-install-update'),
-    checkForUpdatesManual: () => ipcRenderer.invoke('check-for-updates-manual') as Promise<{ status: 'success' | 'error' | 'disabled'; updateAvailable?: boolean; version?: string; message?: string }>,
-
-    // About section support
-    openExternal: (url: string) => ipcRenderer.send('open-external', url),
-    getAppVersion: () => ipcRenderer.invoke('get-app-version') as Promise<string>,
     isDev: () => ipcRenderer.invoke('is-dev') as Promise<boolean>,
 
 });

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
-import EyeNotification from './EyeNotification';
 import { CartoonEyeClosed } from './MaskIcon';
 
 // The main process sizes the ghost window to the union of all displays and
@@ -302,7 +301,6 @@ const FloatingEye: React.FC = () => {
                     </span>
                 )}
             </button>
-            <EyeNotification />
         </div>
     );
 };

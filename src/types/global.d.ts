@@ -24,10 +24,6 @@ declare global {
             updateSidebarRect: (rect: { width: number, height: number, offsetX: number, offsetY: number }) => void;
             registerTeleportShortcut: (shortcut: string) => void;
             onTeleportTriggered: (callback: (data: { x: number, y: number }) => void) => (() => void);
-            // Clipboard Manager
-            startClipboardListener: () => void;
-            stopClipboardListener: () => void;
-            onClipboardUpdate: (callback: (data: { type: string; content: string }) => void) => (() => void);
             writeToClipboard: (data: { type: string; content: string }) => void;
             // Mouse click-through
             setIgnoreMouseEvents: (ignore: boolean) => void;
@@ -50,9 +46,7 @@ declare global {
             getFileIcon: (path: string) => Promise<string | null>;
             launchFile: (path: string) => void;
             getFilePath: (file: File) => string;
-            // Auto-launch
-            getAutoLaunch: () => Promise<boolean>;
-            setAutoLaunch: (enabled: boolean) => void;
+
             // Focus Audio
             getMelodyAudio: (name: string) => Promise<string | null>;
             // License API
@@ -112,25 +106,13 @@ declare global {
             onLlmStreamChunk: (callback: (data: { chatId: string, messageId: string, chunk: string }) => void) => () => void;
             onLlmStreamEnd: (callback: (data: { chatId: string, messageId: string }) => void) => () => void;
             onLlmStreamError: (callback: (data: { chatId: string, messageId: string, error: string }) => void) => () => void;
-            
+
             // Notes
             saveNoteAsText: (title: string, content: string, savePath?: string, isFavorite?: boolean) => Promise<{ success: boolean; path?: string; reason?: string }>;
             selectNoteSaveFolder: () => Promise<{ canceled: boolean; path?: string }>;
             getDefaultNoteSavePath: () => Promise<string>;
             saveNotesToDir: (dir: string, notes: Array<{ title: string; content: string; isSettings?: boolean; isFavorite?: boolean }>) => Promise<{ success: boolean; reason?: string }>;
 
-            // Auto Updater
-            onUpdateAvailable: (callback: (version: string) => void) => (() => void);
-            onUpdateDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => (() => void);
-            onUpdateDownloadComplete: (callback: (version: string) => void) => (() => void);
-            onUpdateError: (callback: (error: string) => void) => (() => void);
-            askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => Promise<boolean>;
-            downloadAndInstallUpdate: () => void;
-            quitAndInstallUpdate: () => void;
-            checkForUpdatesManual: () => Promise<{ status: 'success' | 'error' | 'disabled'; updateAvailable?: boolean; version?: string; message?: string }>;
-
-            openExternal: (url: string) => void;
-            getAppVersion: () => Promise<string>;
             isDev: () => Promise<boolean>;
 
         };

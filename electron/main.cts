@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execFile, ChildProcess } from 'child_process';
 import { LicenseManager } from './licenseManager.cjs';
-import { autoUpdater } from 'electron-updater';
 import AdmZip from 'adm-zip';
 import {
     GHOST_WINDOW_WIDTH,
@@ -13,7 +12,6 @@ import {
     getGhostBounds,
     getGhostCenter
 } from './window-geometry.cjs';
-import { createClipboardController } from './clipboard.cjs';
 import { createTray } from './tray.cjs';
 
 // 鈹€鈹€鈹€ KoPlayer: Worker Thread Setup 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
@@ -49,10 +47,6 @@ const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let currentEdge: string = 'left';
-const clipboardController = createClipboardController({
-    getWindow: () => mainWindow,
-    isMac
-});
 let psProcess: ChildProcess | null = null;
 let isGlobalPasteModeActive = false;
 let isAwaitingPinTarget = false;
@@ -80,7 +74,6 @@ let lastSmtcAlbumArt: string | null = null;
 
 // Set these flags for feature toggling (managed by kobar-build.js)
 const IS_STORE_BUILD = true;
-const ENABLE_AUTO_UPDATE = false;
 
 // Set Application User Model ID to fix Windows Taskbar, Notifications, and Task Manager Startup icons
 const AUMID = isDev ? 'com.eedali.kobar.dev' : 'com.eedali.kobar';
@@ -375,7 +368,6 @@ app.whenReady().then(() => {
         }
     });
 
-    clipboardController.start();
     startMediaPolling();
 
     app.on('activate', () => {
@@ -440,42 +432,6 @@ app.whenReady().then(() => {
         }
     });
 
-    // Auto Updater Setup
-    autoUpdater.autoDownload = false;
-    autoUpdater.autoInstallOnAppQuit = true;
-
-    autoUpdater.on('update-available', (info) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('update-available', info.version);
-        }
-    });
-
-    autoUpdater.on('download-progress', (progressObj) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('update-download-progress', {
-                percent: progressObj.percent,
-                bytesPerSecond: progressObj.bytesPerSecond,
-                transferred: progressObj.transferred,
-                total: progressObj.total
-            });
-        }
-    });
-
-    autoUpdater.on('update-downloaded', (info) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('update-download-complete', info.version);
-        }
-    });
-
-    autoUpdater.on('error', (err) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('update-error', err?.message || '未知的更新错误');
-        }
-    });
-
-    if (ENABLE_AUTO_UPDATE) {
-        autoUpdater.checkForUpdates();
-    }
 });
 
 app.on('window-all-closed', () => {
@@ -493,18 +449,6 @@ ipcMain.on('hide-app', () => {
 
 ipcMain.on('quit-app', () => {
     app.quit();
-});
-
-ipcMain.handle('ask-for-update', async (event, { title, message, yesLabel, noLabel }) => {
-    if (!mainWindow) return false;
-    const result = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: title,
-        message: message,
-        buttons: [yesLabel, noLabel]
-    });
-    // 0 is the index of the first button (yesLabel)
-    return result.response === 0;
 });
 
 ipcMain.handle('save-note-as-text', async (event, { title, content, savePath, isFavorite }) => {
@@ -594,38 +538,6 @@ ipcMain.handle('save-notes-to-dir', async (_event, { dir, notes }) => {
     } catch (err) {
         console.error('Failed to auto-save notes:', err);
         return { success: false, reason: String(err) };
-    }
-});
-
-ipcMain.on('download-and-install-update', () => {
-    autoUpdater.downloadUpdate();
-});
-
-ipcMain.on('quit-and-install-update', () => {
-    autoUpdater.quitAndInstall();
-});
-
-ipcMain.handle('check-for-updates-manual', async () => {
-    if (!ENABLE_AUTO_UPDATE) return { status: 'disabled' };
-    try {
-        const result = await autoUpdater.checkForUpdates();
-        if (!result) {
-            throw new Error('未获取到更新信息');
-        }
-        const currentVersion = app.getVersion();
-        const latestVersion = result.updateInfo.version;
-        const updateAvailable = latestVersion !== currentVersion;
-        
-        return {
-            status: 'success',
-            updateAvailable,
-            version: latestVersion
-        };
-    } catch (error: any) {
-        return {
-            status: 'error',
-            message: error?.message || '未知错误'
-        };
     }
 });
 
@@ -1142,53 +1054,16 @@ ipcMain.handle('llm-request', async (event, data: { chatId: string, messageId: s
     }
 });
 
-// Auto-launch at system startup
-ipcMain.handle('get-auto-launch', () => {
-    const settings = app.getLoginItemSettings();
-    return settings.openAtLogin;
-});
-
-ipcMain.on('set-auto-launch', (_event, enabled: boolean) => {
-    if (isDev) {
-        console.log(`Bypassing auto-launch setting in DEV mode (would set to: ${enabled})`);
-        return;
-    }
-
-    // For AppX/Windows Store builds, we MUST use the native openAtLogin without args
-    // Electron internally triggers the Appx StartupTask.
-    if (process.windowsStore) {
-        app.setLoginItemSettings({ openAtLogin: enabled });
-    } else {
-        // For NSIS/Standard builds, explicitly defining the exe path with quotes fixes the Task Manager Generic Icon bug, extending reliable registry execution.
-        const exePath = `"${process.execPath}"`;
-        app.setLoginItemSettings({
-            openAtLogin: enabled,
-            path: exePath, // Electron uses this to set the registry key natively
-            args: [
-                '--hidden'
-            ]
-        });
-    }
-});
-
-ipcMain.on('start-clipboard-listener', () => {
-    clipboardController.start();
-});
-
-ipcMain.on('stop-clipboard-listener', () => {
-    clipboardController.stop();
-});
+// Auto-launch at system startup removed
 
 ipcMain.on('write-to-clipboard', (_event, data: { type: string; content: string }) => {
     console.log('[clipboard] write-to-clipboard received:', data?.type, 'len=', data?.content?.length);
     if (data.type === 'text') {
         clipboard.writeText(data.content);
-        clipboardController.markWritten(data);
         console.log('[clipboard] text written, ok');
     } else if (data.type === 'image') {
         const img = nativeImage.createFromDataURL(data.content);
         clipboard.writeImage(img);
-        clipboardController.markWritten(data);
     }
 });
 
@@ -1216,11 +1091,9 @@ ipcMain.on('set-global-paste-mode', (event, isActive) => {
 ipcMain.on('execute-global-paste', (event, data) => {
     if (data.type === 'text') {
         clipboard.writeText(data.content);
-        clipboardController.markWritten(data);
     } else if (data.type === 'image') {
         const img = nativeImage.createFromDataURL(data.content);
         clipboard.writeImage(img);
-        clipboardController.markWritten(data);
     }
     globalShortcut.unregister('CommandOrControl+V');
 
@@ -1499,8 +1372,6 @@ ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format:
 ipcMain.on('copy-screenshot-to-clipboard', (_event, dataUrl: string) => {
     const img = nativeImage.createFromDataURL(dataUrl);
     clipboard.writeImage(img);
-    clipboardController.markWritten({ type: 'image', content: dataUrl });
-    // Let the existing clipboard polling pick this up for the FIFO queue
 });
 
 // Restore KoBar window after screenshot session finishes
@@ -2086,15 +1957,6 @@ ipcMain.on('media-command', (_event, command: string) => {
             }
         }
     }
-});
-
-ipcMain.on('open-external', (_event, url: string) => {
-    shell.openExternal(url);
-});
-
-
-ipcMain.handle('get-app-version', () => {
-    return app.getVersion();
 });
 
 ipcMain.handle('is-dev', () => {

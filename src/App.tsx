@@ -11,7 +11,6 @@ import FloatingEye from './components/layout/FloatingEye';
 
 
 import LicenseActivationModal from './components/license/LicenseActivationModal';
-import TutorialManager from './components/tutorial/TutorialManager';
 
 
 
@@ -82,7 +81,6 @@ const App: React.FC = () => {
 
 
  const isHydrated = useAppStore(state => state.isHydrated);
-  const clipboardMonitoring = useAppStore(state => state.clipboardMonitoring);
   const notes = useAppStore(state => state.notes);
   const favorites = useAppStore(state => state.favorites);
   const noteSavePath = useAppStore(state => state.noteSavePath);
@@ -134,17 +132,7 @@ const App: React.FC = () => {
   }, [isHydrated, noteSavePath, notes, favorites]);
 
 
-  // Clipboard privacy: sync the monitoring toggle with the main-process listener
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (clipboardMonitoring) {
-      window.api?.startClipboardListener?.();
-    } else {
-      window.api?.stopClipboardListener?.();
-    }
-  }, [isHydrated, clipboardMonitoring]);
-
-// KoBox cleanup triggers
+  // KoBox cleanup triggers
   useEffect(() => {
     window.api?.cleanKoBox?.(useAppStore.getState().koBoxCleanupMode);
 
@@ -376,8 +364,6 @@ const App: React.FC = () => {
       {!IS_STORE_BUILD && !isLicensed && (
         <LicenseActivationModal onSuccess={() => setLicensed(true)} />
       )}
-
-      <TutorialManager />
     </>
   );
 };

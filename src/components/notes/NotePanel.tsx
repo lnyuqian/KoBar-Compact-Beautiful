@@ -21,7 +21,6 @@ const NotePanel: React.FC = () => {
     const addNote = useAppStore(state => state.addNote);
     const deleteNote = useAppStore(state => state.deleteNote);
     const t = useAppStore(state => state.t);
-    const isHighlightingSettingsBtn = useAppStore(state => state.isHighlightingSettingsBtn);
     const openSettingsTab = useAppStore(state => state.openSettingsTab);
     const favorites = useAppStore(state => state.favorites);
     const toggleFavorite = useAppStore(state => state.toggleFavorite);
@@ -34,9 +33,10 @@ const NotePanel: React.FC = () => {
     const setIsEditing = useAppStore(state => state.setIsEditing);
     const edgePosition = useAppStore(state => state.edgePosition);
 
-    // Keep the tabs header and the content area aligned when the panel is
+    // Keep the tabs header inset aligned to the screen edge when the panel is
     // docked to either side. The screen-edge side gets the larger inset;
     // top/bottom docking keeps the same small inset on both sides.
+    // (Content area below uses a fixed 2% inset, independent of docking.)
     const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
     const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
 
@@ -78,6 +78,20 @@ const NotePanel: React.FC = () => {
     // Direct DOM access for zero-latency resizing
     const panelRef = useRef<HTMLDivElement>(null);
     const [isResizing, setIsResizing] = useState(false);
+    // Live panel width for responsive tab columns: tracked from the real DOM
+    // width via ResizeObserver so the tab grid switches columns immediately
+    // while dragging (the store value only updates on mouseup).
+    const [livePanelWidth, setLivePanelWidth] = useState(notePanelWidth);
+    useEffect(() => {
+        if (!panelRef.current) return;
+        const ro = new ResizeObserver(() => {
+            if (panelRef.current) {
+                setLivePanelWidth(panelRef.current.getBoundingClientRect().width);
+            }
+        });
+        ro.observe(panelRef.current);
+        return () => ro.disconnect();
+    }, []);
 
     // Sync panel dimensions when store changes externally (double-click reset, tab switch, etc.)
     useEffect(() => {
@@ -246,7 +260,7 @@ const NotePanel: React.FC = () => {
                     onMouseLeave={handleTabsMouseLeave}
                     onMouseUp={handleTabsMouseUp}
                     onMouseMove={handleTabsMouseMove}
-                    className={`grid grid-cols-2 gap-1 w-full max-h-[240px] overflow-y-auto scrollbar-hide select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid gap-1 w-full max-h-[240px] overflow-y-auto scrollbar-hide select-none ${livePanelWidth < 230 ? 'grid-cols-1' : 'grid-cols-2'} ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'}`}
                 >
                     {notes.map((note) => (
                         <div
@@ -326,7 +340,7 @@ const NotePanel: React.FC = () => {
                     </div>
                     <button
                         onClick={openSettingsTab}
-                        className={`p-0.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-[#989898] hover:text-primary rounded-lg hover:bg-white/5'}`}
+                        className="p-0.5 transition-all flex items-center justify-center text-[#989898] hover:text-primary rounded-lg hover:bg-white/5"
                         title={t('settings')}
                     >
                         <img src={settingsIcon} alt="" width={18} height={18} className="block" />
@@ -456,8 +470,8 @@ const NotePanel: React.FC = () => {
                 className="flex-1 flex flex-col overflow-hidden"
                 style={{
                     backgroundColor: '#2E2E2E',
-                    paddingLeft: `${panelPaddingLeft}%`,
-                    paddingRight: `${panelPaddingRight}%`,
+                    paddingLeft: '2%',
+                    paddingRight: '2%',
                 }}
             >
                 {activeNote?.isSettings ? (

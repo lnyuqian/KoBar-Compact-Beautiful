@@ -72,18 +72,6 @@ export interface FavoriteNote {
     createdAt: number;
 }
 
-export interface EyeNotificationButton {
-    label: string;
-    color: string;
-    onClick: () => void;
-}
-
-export interface EyeNotificationData {
-    isVisible: boolean;
-    message: string;
-    buttons?: EyeNotificationButton[];
-}
-
 export interface PinnedApp {
     id: string;
     name: string;
@@ -91,13 +79,6 @@ export interface PinnedApp {
     icon: string;
     tag?: string;
 }
-
-export interface TutorialState {
-    version: string;
-    status: 'pending' | 'completed' | 'snoozed';
-    snoozeUntil?: number;
-}
-
 
 export interface WorkspaceConfig {
     id: string;
@@ -122,7 +103,6 @@ export interface WorkspaceConfig {
     design: 'style1' | 'style2';
     glassOpacity: number;
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
-    isPopupSmartPositioning: boolean;
     enableEyeAnimation: boolean;
     orientation: 'vertical' | 'horizontal';
 }
@@ -155,20 +135,8 @@ interface AppState {
     nextNoteId: number;
     setActiveNoteId: (id: number) => void;
 
-    // Tutorial State
-    tutorialState: TutorialState;
-    setTutorialState: (state: Partial<TutorialState>) => void;
-    isManualTutorialTrigger: boolean;
-    setIsManualTutorialTrigger: (val: boolean) => void;
-    isHighlightingToggleNotes: boolean;
-    setIsHighlightingToggleNotes: (val: boolean) => void;
-    isHighlightingSettingsBtn: boolean;
-    setIsHighlightingSettingsBtn: (val: boolean) => void;
-
     // Eye Notification
-    eyeNotification: EyeNotificationData | null;
-    showEyeNotification: (data: Omit<EyeNotificationData, 'isVisible'>) => void;
-    hideEyeNotification: () => void;
+
     addNote: () => void;
     deleteNote: (id: number) => void;
     updateNoteContent: (id: number, content: string) => void;
@@ -243,12 +211,6 @@ interface AppState {
 
 
 
-    isPopupSmartPositioning: boolean;
-    setIsPopupSmartPositioning: (val: boolean) => void;
-
-
-
-
     // UI Spacing & Sizing
     toggleWidth: number;
     setToggleWidth: (val: number) => void;
@@ -263,14 +225,9 @@ interface AppState {
 
 
 
-    // Launch at Startup
-    launchAtStartup: boolean;
-    setLaunchAtStartup: (val: boolean) => void;
+    // Eye animation (visual feature, kept enabled)
     enableEyeAnimation: boolean;
     setEnableEyeAnimation: (val: boolean) => void;
-    // Clipboard privacy: when false, the main process stops reading the clipboard
-    clipboardMonitoring: boolean;
-    setClipboardMonitoring: (val: boolean) => void;
     // Default folder for saving notes as text files (empty = system default)
     noteSavePath: string;
     setNoteSavePath: (path: string) => void;
@@ -304,31 +261,29 @@ const defaultNotes: Note[] = [
         title: '欢迎使用 KoBar！',
         icon: 'waving_hand',
         emoji: '👋',
-        content: `<p><strong>你的模块化、始终置顶的桌面实用侧边栏。</strong></p>
-<p>一个多线程创意助手，常驻你的屏幕边缘。</p>
+        content: `<p><strong>你的模块化、始终置顶的桌面笔记侧边栏。</strong></p>
+<p>一个轻量、简洁的笔记工具，常驻你的屏幕边缘，随时记录灵感。</p>
 <br>
-<p><strong>🌟 开源与支持</strong></p>
-<p>KoBar 是一个完全开源的项目！我们欢迎你的反馈和贡献。</p>
-<p>如需报告问题、获取支持、提出功能建议或进行赞助，请访问我们的 GitHub 仓库：<a href="https://github.com/eedali/KoBar" target="_blank" rel="noopener noreferrer">https://github.com/eedali/KoBar</a></p>
-<br>
-<p><strong>🚀 KoBar 功能</strong></p>
+<p><strong>📝 笔记管理</strong></p>
 <ul>
-    <li>⚡ <strong>应用启动器（快捷方式）：</strong> 从侧边栏一键固定并启动你常用的应用。拖拽任意文件或应用即可创建快捷方式。</li>
-    <li>📋 <strong>剪贴板管理器（复制与粘贴）：</strong> 多槽位剪贴板，自动保存你的复制历史。单击即可访问并粘贴过去的剪贴内容。</li>
-    <li>📅 <strong>KoCalendar（日历）：</strong> 快速查看你的日程和重要日期。无需离开当前工作流即可保持条理。</li>
-    <li>✅ <strong>待办事项列表：</strong> 用简单有效的可勾选列表跟踪你的日常任务。直接在屏幕边缘高效管理你的目标。</li>
-    <li>📝 <strong>代码片段库：</strong> 存储和管理你常用的代码块或文本片段。需要时一键复制到剪贴板。</li>
-    <li>📸 <strong>截图工作室：</strong> 内置标注和编辑工具，即时捕获屏幕。无需打开外部软件即可保存或分享截图。</li>
-    <li>🧮 <strong>计算器：</strong> 一个简洁的弹出式计算器，随时进行快速数学运算。</li>
-    <li>🎨 <strong>取色器：</strong> 轻松从屏幕任意位置取色，获取 HEX 或 RGB 值。非常适合快速设计和开发。</li>
-    <li>🤖 <strong>AI Hub：</strong> 集成式人工智能助手，用于快速查询和头脑风暴。直接在桌面发挥 AI 的力量。</li>
+    <li>⭐ <strong>收藏：</strong> 点击笔记标签左侧的星形图标即可收藏或取消收藏，收藏的笔记会出现在收藏列表中。</li>
+    <li>✖️ <strong>删除：</strong> 将鼠标悬停在笔记标签上，点击右上角的 × 图标即可删除该笔记。</li>
+    <li>📑 <strong>双列标签：</strong> 所有笔记以双列选项卡的形式展示，点击即可快速切换。</li>
 </ul>
 <br>
-<p><strong>⚙️ 设置与个性化</strong></p>
-<p>如需将 KoBar 配置为完全符合你的需求，只需点击此笔记面板右上角的 <strong>设置图标 ⚙️</strong>。</p>
+<p><strong>🛠 快捷操作（面板底部按钮行）</strong></p>
 <ul>
-    <li>📂 <strong>工作区：</strong> 针对特定任务（例如编码、设计、休闲）保存和加载不同的侧边栏功能布局。单击即可在不同 KoBar 配置之间切换。</li>
-    <li>🎨 <strong>个性化：</strong> 让 KoBar 真正属于你！你可以自由定制主题颜色，匹配你的个人风格。</li>
+    <li>➕ <strong>添加新笔记：</strong> 一键创建空白笔记。</li>
+    <li>📖 <strong>阅读 / ✏️ 编辑模式：</strong> 在阅读模式和 Markdown 编辑模式之间切换。编辑模式下支持标题、列表、加粗、文字颜色、图片等富文本格式。</li>
+    <li>⭐ <strong>收藏列表：</strong> 查看并管理所有已收藏的笔记。</li>
+    <li>📋 <strong>复制整个笔记：</strong> 将当前笔记的全部内容复制到剪贴板。</li>
+    <li>⚙️ <strong>设置：</strong> 打开设置面板。</li>
+</ul>
+<br>
+<p><strong>⚙️ 设置面板</strong></p>
+<ul>
+    <li>📂 <strong>文档保存路径：</strong> 设置笔记自动导出到本地文件夹的位置，或恢复为系统默认（文档目录）。</li>
+    <li>🎨 <strong>UI 布局设置：</strong> 调整侧边栏方向、宽度、图标大小、功能间距、编辑器字体大小与行高等。</li>
 </ul>
 <br>
 <p>尽情使用 KoBar！🚀</p>`
@@ -445,11 +400,6 @@ export const useAppStore = create<AppState>()(
 
 
 
-            isPopupSmartPositioning: false,
-            setIsPopupSmartPositioning: (val: boolean) => set({ isPopupSmartPositioning: val }),
-
-
-
             // UI Spacing & Sizing (defaults)
             toggleWidth: 22, // Note Notch Protrusion
             setToggleWidth: (val) => set({ toggleWidth: val }),
@@ -462,17 +412,10 @@ export const useAppStore = create<AppState>()(
             editorLineHeight: 1.4,
             setEditorLineHeight: (val) => set({ editorLineHeight: val }),
 
-            // Launch at Startup
-            launchAtStartup: true,
-            setLaunchAtStartup: (val) => {
-                set({ launchAtStartup: val });
-                window.api?.setAutoLaunch?.(val);
-            },
+            // Eye animation (visual feature, kept enabled)
             enableEyeAnimation: true,
             setEnableEyeAnimation: (val) => set({ enableEyeAnimation: val }),
 
-            clipboardMonitoring: true,
-            setClipboardMonitoring: (val) => set({ clipboardMonitoring: val }),
             noteSavePath: '',
             setNoteSavePath: (path) => set({ noteSavePath: path }),
             t: (key) => translations.zh[key] || key,
@@ -532,25 +475,6 @@ export const useAppStore = create<AppState>()(
             nextNoteId: 2,
             setActiveNoteId: (id) => set({ activeNoteId: id }),
 
-            // Tutorial State
-            tutorialState: { version: '1.0.0', status: 'pending' },
-            setTutorialState: (updates) => set((state) => {
-                console.log('[Store] Updating tutorial state:', updates);
-                return { tutorialState: { ...state.tutorialState, ...updates } };
-            }),
-            isManualTutorialTrigger: false,
-            setIsManualTutorialTrigger: (val) => set({ isManualTutorialTrigger: val }),
-            isHighlightingToggleNotes: false,
-            setIsHighlightingToggleNotes: (val) => set({ isHighlightingToggleNotes: val }),
-            isHighlightingSettingsBtn: false,
-            setIsHighlightingSettingsBtn: (val) => set({ isHighlightingSettingsBtn: val }),
-
-            // Eye Notification
-            eyeNotification: null,
-            showEyeNotification: (data) => set({ eyeNotification: { ...data, isVisible: true } }),
-            hideEyeNotification: () => set((state) => ({ 
-                eyeNotification: state.eyeNotification ? { ...state.eyeNotification, isVisible: false } : null 
-            })),
             addNote: () => set((state) => {
                 const newNote: Note = {
                     id: state.nextNoteId,
@@ -693,7 +617,6 @@ export const useAppStore = create<AppState>()(
                     design: state.design,
                     glassOpacity: state.glassOpacity,
                     edgePosition: state.edgePosition,
-                    isPopupSmartPositioning: state.isPopupSmartPositioning,
                     enableEyeAnimation: state.enableEyeAnimation,
                     orientation: state.orientation
                 };
@@ -728,7 +651,6 @@ export const useAppStore = create<AppState>()(
                     design: ws.design,
                     glassOpacity: ws.glassOpacity,
                     edgePosition: ws.edgePosition,
-                    isPopupSmartPositioning: ws.isPopupSmartPositioning || false,
                     enableEyeAnimation: ws.enableEyeAnimation !== undefined ? ws.enableEyeAnimation : true,
                     orientation: ws.orientation || 'vertical'
                 };
@@ -746,8 +668,6 @@ export const useAppStore = create<AppState>()(
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
 
-
-                    isPopupSmartPositioning: state.isPopupSmartPositioning,
 
                     koBoxCleanupMode: state.koBoxCleanupMode,
 
@@ -797,24 +717,6 @@ export const useAppStore = create<AppState>()(
                     }
                     if (persistedState.editorLineHeight === undefined) {
                         persistedState.editorLineHeight = 1.4;
-                    }
-                }
-                // version 20 migration for tutorial state
-                if (version <= 19) {
-                    if (persistedState.tutorialState === undefined) {
-                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
-                    }
-                }
-                // version 19 migration for tutorial state
-                if (version <= 18) {
-                    if (persistedState.tutorialState === undefined) {
-                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
-                    }
-                    if (persistedState.isHighlightingToggleNotes === undefined) {
-                        persistedState.isHighlightingToggleNotes = false;
-                    }
-                    if (persistedState.isHighlightingSettingsBtn === undefined) {
-                        persistedState.isHighlightingSettingsBtn = false;
                     }
                 }
                 // version 18 migration for orientation
@@ -917,7 +819,6 @@ export const useAppStore = create<AppState>()(
                 favorites: state.favorites,
                 notePanelWidth: state.notePanelWidth,
                 notePanelHeight: state.notePanelHeight,
-                tutorialState: state.tutorialState,
 
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
@@ -925,9 +826,7 @@ export const useAppStore = create<AppState>()(
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
                 teleportShortcut: state.teleportShortcut,
-                launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
-                clipboardMonitoring: state.clipboardMonitoring,
                 noteSavePath: state.noteSavePath,
 
 

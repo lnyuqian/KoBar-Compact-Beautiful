@@ -84,7 +84,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
              const effectiveMaxW = target === 'note' ? Math.max(maxW, startSizeRef.current.width) : maxW;
              const effectiveMaxH = target === 'note' ? Math.max(maxH, startSizeRef.current.height) : maxH;
 
-            const clampedWidth = Math.min(Math.max(newWidth, 250), effectiveMaxW);
+            const clampedWidth = Math.min(Math.max(newWidth, 170), effectiveMaxW);
             const clampedHeight = Math.min(Math.max(newHeight, 200), effectiveMaxH);
 
             onResizeTemp(clampedWidth, clampedHeight);
@@ -124,7 +124,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
             const effectiveMaxW = target === 'note' ? Math.max(maxW, startSizeRef.current.width) : maxW;
             const effectiveMaxH = target === 'note' ? Math.max(maxH, startSizeRef.current.height) : maxH;
 
-            const clampedWidth = Math.min(Math.max(finalWidth, 250), effectiveMaxW);
+            const clampedWidth = Math.min(Math.max(finalWidth, 170), effectiveMaxW);
             const clampedHeight = Math.min(Math.max(finalHeight, 200), effectiveMaxH);
 
             if (direction === 'side' || direction === 'corner') {
