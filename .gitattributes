@@ -1,0 +1,25 @@
+# Normalize line endings across platforms (Windows/macOS/Linux)
+# Text files are converted to LF in the repo and checked out with native
+# line endings on each platform — prevents noisy CRLF warnings.
+* text=auto
+
+# Explicit declarations for common text formats
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.cts  text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary assets — never touch
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.icns binary
+*.ogg  binary
