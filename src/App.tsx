@@ -209,9 +209,11 @@ const App: React.FC = () => {
     // to flip the ignore-mouse state back after a monitor sleep / external window move.
     // Short interval also corrects click-through quickly after UI re-layout (e.g. panel
     // open/close or sidebar position change) without waiting for the next mousemove.
+    // 3000ms keeps the self-heal fast enough while halving the idle elementFromPoint
+    // hit-tests that otherwise run forever against the fullscreen ghost window.
     const clickThroughTimer = setInterval(() => {
       reEvaluateClickThrough();
-    }, 1500);
+    }, 3000);
     unsubs.push(() => clearInterval(clickThroughTimer));
     if (window.api?.onOpenSettings) {
       unsubs.push(window.api.onOpenSettings(() => {
@@ -225,21 +227,6 @@ const App: React.FC = () => {
       }));
     }
 
-
-    // KoPlayer: Subscribe to media updates from the main process
-    if (window.api?.onMediaUpdate) {
-      unsubs.push(window.api.onMediaUpdate((data) => {
-        useAppStore.getState().setCurrentMedia(data);
-        useAppStore.getState().setCurrentMediaSourceApp((data?.sourceAppId || '').toLowerCase());
-      }));
-    }
-
-    // Video PiP: Subscribe to background-scanned video URL cache
-    if (window.api?.onVideoUrlsUpdate) {
-      unsubs.push(window.api.onVideoUrlsUpdate((urls) => {
-        useAppStore.getState().setActiveVideoUrls(urls);
-      }));
-    }
 
     return () => {
       unsubs.forEach(unsub => unsub());

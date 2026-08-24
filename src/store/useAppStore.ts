@@ -233,13 +233,6 @@ interface AppState {
     setNoteSavePath: (path: string) => void;
     t: (key: TranslationKeys) => string;
 
-    currentMedia: MediaData | null;
-    setCurrentMedia: (data: MediaData | null) => void;
-    activeVideoUrls: string[];
-    setActiveVideoUrls: (urls: string[]) => void;
-    currentMediaSourceApp: string;
-    setCurrentMediaSourceApp: (app: string) => void;
-
     isLicensed: boolean;
     setLicensed: (val: boolean) => void;
 
@@ -575,13 +568,6 @@ export const useAppStore = create<AppState>()(
                     nextNoteId: Math.max(state.nextNoteId, favId + 1),
                 };
             }),
-
-            currentMedia: null,
-            setCurrentMedia: (data) => set({ currentMedia: data }),
-            activeVideoUrls: [],
-            setActiveVideoUrls: (urls) => set({ activeVideoUrls: urls }),
-            currentMediaSourceApp: '',
-            setCurrentMediaSourceApp: (app) => set({ currentMediaSourceApp: app }),
 
             // License
             isLicensed: false,

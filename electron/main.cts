@@ -14,9 +14,6 @@ import {
 } from './window-geometry.cjs';
 import { createTray } from './tray.cjs';
 
-// 鈹€鈹€鈹€ KoPlayer: Worker Thread Setup 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-import { Worker } from 'worker_threads';
-let smtcWorker: Worker | null = null;
 
 const isMac = process.platform === 'darwin';
 const isWin = process.platform === 'win32';
@@ -53,7 +50,6 @@ let isAwaitingPinTarget = false;
 let sidebarRect = { ...DEFAULT_SIDEBAR_RECT };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
-let pipWindow: BrowserWindow | null = null;
 let preEyeDropperBounds: { x: number; y: number; width: number; height: number; } | null = null;
 let isEyeDropperActive = false;
 
@@ -61,16 +57,19 @@ let trackingInterval: NodeJS.Timeout | null = null;
 let pinnedHwnd: number | null = null;
 let allPinnedHwnds: Set<number> = new Set();
 
-// KoPlayer Media Polling
-let mediaPollingInterval: ReturnType<typeof setInterval> | null = null;
-let lastMediaState = '';
-
-// Video PiP 鈥?background URL scan debounce
-const BROWSER_APP_IDS = ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'];
-let lastVideoScanAt = 0;
-const VIDEO_SCAN_DEBOUNCE_MS = 5000;
-let lastSmtcSourceAppId = '';
-let lastSmtcAlbumArt: string | null = null;
+// Pinned-window border tracking — serialized request/response over the long-lived
+// PowerShell process. The old loop polled every 50ms and attached its reply
+// listener to stdin (a Writable stream that never emits 'data'), so every query
+// went unanswered while the PS host was hammered with 20 queries/sec — a major
+// dev-mode lag source. Now:
+//   - 250ms cadence (>= 200ms as required) instead of 50ms;
+//   - replies are read from STDOUT with line buffering;
+//   - only one query is in flight at a time, with an idle timeout so a lost or
+//     swallowed reply (e.g. a stray PS warning) can never stall the chain.
+const WINDOW_TRACK_POLL_MS = 250;
+let windowTrackInFlight = false;
+let windowTrackOutBuffer = '';
+let windowTrackIdleTimer: NodeJS.Timeout | null = null;
 
 // Set these flags for feature toggling (managed by kobar-build.js)
 const IS_STORE_BUILD = true;
@@ -368,8 +367,6 @@ app.whenReady().then(() => {
         }
     });
 
-    startMediaPolling();
-
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
@@ -377,7 +374,6 @@ app.whenReady().then(() => {
     app.on('will-quit', () => {
         globalShortcut.unregisterAll();
         if (psProcess) psProcess.kill();
-        stopMediaPolling();
     });
 
     app.on('browser-window-blur', (event, window) => {
@@ -600,7 +596,11 @@ ipcMain.on('send-notification', (_event, { title, body }) => {
 
 function startWindowTracking(hwnd: number) {
     if (borderWindow) borderWindow.destroy();
-    if (trackingInterval) clearInterval(trackingInterval);
+    // Reset any stale tracking state (a previous chain may still be in flight).
+    if (trackingInterval) { clearTimeout(trackingInterval); trackingInterval = null; }
+    if (windowTrackIdleTimer) { clearTimeout(windowTrackIdleTimer); windowTrackIdleTimer = null; }
+    windowTrackInFlight = false;
+    windowTrackOutBuffer = '';
 
     pinnedHwnd = hwnd;
     mainWindow?.webContents.send('pinned-window-changed', hwnd);
@@ -623,68 +623,114 @@ function startWindowTracking(hwnd: number) {
     borderWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     borderWindow.loadURL(`data:text/html,<body style="margin:0;padding:2px;overflow:hidden;border:8px solid %23ef4444;box-sizing:border-box;width:100vw;height:100vh;background:transparent;"></body>`);
 
-    trackingInterval = setInterval(() => {
-        if (!borderWindow || !pinnedHwnd || borderWindow.isDestroyed()) return;
-        const psPosScript = `
-        $hwnd = [IntPtr]${pinnedHwnd}
-        $rect = New-Object K+RECT
-        if ([K]::GetWindowRect($hwnd, [ref]$rect)) {
-            Write-Output "POS:$($rect.Left),$($rect.Top),$($rect.Right),$($rect.Bottom)"
-        } else {
-            Write-Output "LOST"
+    // Kick off the serialized tracking chain (first poll immediately, then on a 250ms cadence).
+    pollPinnedWindowPosition();
+}
+
+function scheduleWindowTrackPoll() {
+    if (trackingInterval) clearTimeout(trackingInterval);
+    trackingInterval = setTimeout(pollPinnedWindowPosition, WINDOW_TRACK_POLL_MS);
+}
+
+function pollPinnedWindowPosition() {
+    if (!borderWindow || !pinnedHwnd || borderWindow.isDestroyed()) return;
+    const ps = psProcess;
+    if (!ps?.stdin?.writable || !ps.stdout || windowTrackInFlight) return;
+
+    // Serialize queries: only one request in flight at a time, so replies from the
+    // shared PowerShell host can never pile up or cross-talk with each other.
+    windowTrackInFlight = true;
+
+    const psPosScript = `
+    $hwnd = [IntPtr]${pinnedHwnd}
+    $rect = New-Object K+RECT
+    if ([K]::GetWindowRect($hwnd, [ref]$rect)) {
+        Write-Output "POS:$($rect.Left),$($rect.Top),$($rect.Right),$($rect.Bottom)"
+    } else {
+        Write-Output "LOST"
+    }
+    `;
+
+    // The reply comes back on STDOUT. (The old code attached this listener to
+    // stdin — a Writable stream that never emits 'data' — so the border never
+    // tracked and the PS host still received an unanswered query every 50ms.)
+    ps.stdout.once('data', onWindowTrackReply);
+
+    // Safety net: a lost/swallowed reply must not stall the tracking chain.
+    if (windowTrackIdleTimer) clearTimeout(windowTrackIdleTimer);
+    windowTrackIdleTimer = setTimeout(() => {
+        windowTrackInFlight = false;
+        scheduleWindowTrackPoll();
+    }, WINDOW_TRACK_POLL_MS * 4);
+
+    ps.stdin.write(psPosScript + '\n');
+}
+
+function onWindowTrackReply(data: Buffer) {
+    // 'data' chunks don't align with Write-Output lines; buffer and split by '\n'.
+    windowTrackOutBuffer += data.toString();
+    let newlineIdx: number;
+    while ((newlineIdx = windowTrackOutBuffer.indexOf('\n')) >= 0) {
+        const line = windowTrackOutBuffer.slice(0, newlineIdx).trim();
+        windowTrackOutBuffer = windowTrackOutBuffer.slice(newlineIdx + 1);
+        if (!line) continue;
+
+        if (line.includes('POS:')) {
+            windowTrackInFlight = false;
+            if (windowTrackIdleTimer) { clearTimeout(windowTrackIdleTimer); windowTrackIdleTimer = null; }
+
+            const parts = line.split('POS:')[1].trim().split(',');
+
+            // Native Windows rect is in PHYSICAL pixels
+            const physLeft = parseInt(parts[0]);
+            const physTop = parseInt(parts[1]);
+            const physRight = parseInt(parts[2]);
+            const physBottom = parseInt(parts[3]);
+
+            const physWidth = physRight - physLeft;
+            const physHeight = physBottom - physTop;
+
+            // Electron setBounds expects LOGICAL pixels
+            const primaryDisplay = screen.getPrimaryDisplay();
+            const sf = primaryDisplay.scaleFactor;
+
+            if (borderWindow && !borderWindow.isDestroyed()) {
+                const logicalX = Math.round(physLeft / sf);
+                const logicalY = Math.round(physTop / sf);
+                const logicalW = Math.round(physWidth / sf);
+                const logicalH = Math.round(physHeight / sf);
+
+                // Surgical logging for verification
+                console.log(`[TRK] HWND:${pinnedHwnd} | L:${logicalX} T:${logicalY} W:${logicalW} H:${logicalH}`);
+
+                borderWindow.setBounds({
+                    x: logicalX,
+                    y: logicalY,
+                    width: logicalW,
+                    height: logicalH
+                });
+
+                // Ensure it stays on top even if the pinned window is re-focused
+                borderWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+            }
+
+            scheduleWindowTrackPoll();
+        } else if (line.includes('LOST')) {
+            windowTrackInFlight = false;
+            if (windowTrackIdleTimer) { clearTimeout(windowTrackIdleTimer); windowTrackIdleTimer = null; }
+            stopWindowTracking();
         }
-        `;
-        if (psProcess && psProcess.stdin) {
-            psProcess.stdin.once('data', (data: Buffer) => {
-                const output = data.toString();
-                if (output.includes('POS:')) {
-                    const parts = output.split('POS:')[1].trim().split(',');
-
-                    // Native Windows rect is in PHYSICAL pixels
-                    const physLeft = parseInt(parts[0]);
-                    const physTop = parseInt(parts[1]);
-                    const physRight = parseInt(parts[2]);
-                    const physBottom = parseInt(parts[3]);
-
-                    const physWidth = physRight - physLeft;
-                    const physHeight = physBottom - physTop;
-
-                    // Electron setBounds expects LOGICAL pixels
-                    const primaryDisplay = screen.getPrimaryDisplay();
-                    const sf = primaryDisplay.scaleFactor;
-
-                    if (borderWindow && !borderWindow.isDestroyed()) {
-                        const logicalX = Math.round(physLeft / sf);
-                        const logicalY = Math.round(physTop / sf);
-                        const logicalW = Math.round(physWidth / sf);
-                        const logicalH = Math.round(physHeight / sf);
-
-                        // Surgical logging for verification
-                        console.log(`[TRK] HWND:${pinnedHwnd} | L:${logicalX} T:${logicalY} W:${logicalW} H:${logicalH}`);
-
-                        borderWindow.setBounds({
-                            x: logicalX,
-                            y: logicalY,
-                            width: logicalW,
-                            height: logicalH
-                        });
-
-                        // Ensure it stays on top even if the pinned window is re-focused
-                        borderWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-                    }
-                } else if (output.includes('LOST')) {
-                    stopWindowTracking();
-                }
-            });
-            psProcess.stdin.write(psPosScript + '\n');
-        }
-    }, 50);
+        // Other stray lines are ignored — the idle timer keeps the chain alive
+        // if a reply never arrives.
+    }
 }
 
 function stopWindowTracking() {
     pinnedHwnd = null;
-    if (trackingInterval) clearInterval(trackingInterval);
-    trackingInterval = null;
+    if (trackingInterval) { clearTimeout(trackingInterval); trackingInterval = null; }
+    if (windowTrackIdleTimer) { clearTimeout(windowTrackIdleTimer); windowTrackIdleTimer = null; }
+    windowTrackInFlight = false;
+    windowTrackOutBuffer = '';
     if (borderWindow) {
         borderWindow.destroy();
         borderWindow = null;
@@ -1383,155 +1429,6 @@ ipcMain.on('screenshot-session-complete', () => {
     }
 });
 
-// 鈹€鈹€鈹€ PIP Video Player (Webview-based mini browser) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-
-/**
- * Extract video URLs from open browsers (shared between on-demand and background scans).
- */
-function runVideoUrlScan(): Promise<string[]> {
-    return new Promise<string[]>((resolve) => {
-        if (!isWin) { resolve([]); return; }
-
-        const psScript = `
-Add-Type -AssemblyName UIAutomationClient
-Add-Type -AssemblyName UIAutomationTypes
-
-$domains = @('youtube.com', 'youtu.be')
-$browsers = @('chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi')
-$urls = [System.Collections.Generic.List[string]]::new()
-
-$root = [System.Windows.Automation.AutomationElement]::RootElement
-$windows = $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
-
-foreach ($w in $windows) {
-    try {
-        $pidVal = $w.Current.ProcessId
-        if ($pidVal -eq 0) { continue }
-        $proc = Get-Process -Id $pidVal -ErrorAction SilentlyContinue
-        if ($null -eq $proc) { continue }
-        
-        $procName = $proc.Name.ToLower()
-        if ($browsers -contains $procName) {
-            $cond = New-Object System.Windows.Automation.PropertyCondition(
-                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-                [System.Windows.Automation.ControlType]::Edit
-            )
-            $edits = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
-            foreach ($e in $edits) {
-                try {
-                    $vp = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-                    $v = $vp.Current.Value
-                    foreach ($d in $domains) {
-                        if ($v -match [regex]::Escape($d)) {
-                            $fullUrl = $v
-                            if ($fullUrl -notmatch '^https?://') {
-                                $fullUrl = "https://" + $fullUrl
-                            }
-                            if (!$urls.Contains($fullUrl)) { $urls.Add($fullUrl) }
-                            break
-                        }
-                    }
-                } catch {}
-            }
-        }
-    } catch {}
-}
-
-if ($urls.Count -gt 0) { $urls | ForEach-Object { Write-Output $_ } }
-`;
-        const child = exec('powershell -NoProfile -NonInteractive -Command -', { timeout: 6000 }, (err, stdout) => {
-            if (err || !stdout.trim()) { resolve([]); return; }
-            const lines = stdout
-                .split('\n')
-                .map((l: string) => l.trim())
-                .filter((l: string) => l.startsWith('http'));
-            resolve(lines);
-        });
-        if (child.stdin) { child.stdin.write(psScript); child.stdin.end(); }
-    });
-}
-
-function createPipWindow(videoUrl: string, title: string, albumArt?: string | null) {
-    if (pipWindow && !pipWindow.isDestroyed()) {
-        pipWindow.close();
-    }
-
-    const pipWidth = 480;
-    const pipHeight = 270;
-
-    // Position in the bottom-right corner of the primary display
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { x: dX, y: dY, width: dW, height: dH } = primaryDisplay.workArea;
-    const startX = dX + dW - pipWidth - 20;
-    const startY = dY + dH - pipHeight - 20;
-
-    const pipPreloadPath = path.join(__dirname, 'preload.cjs');
-
-    pipWindow = new BrowserWindow({
-        x: startX,
-        y: startY,
-        width: pipWidth,
-        height: pipHeight,
-        minWidth: 240,
-        minHeight: 135,
-        frame: false,
-        transparent: false,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        resizable: true,
-        hasShadow: true,
-        backgroundColor: '#000000',
-        icon: path.join(__dirname, '../build/icon.png'),
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            preload: pipPreloadPath,
-        },
-    });
-
-    // Spoof user agent to bypass YouTube Error 153 (automation/webview block)
-    pipWindow.webContents.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-    pipWindow.setAspectRatio(16 / 9);
-    pipWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 2);
-
-    const encodedUrl = encodeURIComponent(videoUrl);
-    const encodedTitle = encodeURIComponent(title);
-
-    if (isDev) {
-        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}`);
-    } else {
-        pipWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
-            query: { pip: 'true', url: videoUrl, title },
-        });
-    }
-
-    pipWindow.on('closed', () => {
-        pipWindow = null;
-        mainWindow?.webContents.send('pip-closed');
-    });
-}
-
-// Detect video URLs playing in open browsers using PowerShell UIAutomation
-// Returns an array of video URLs found in Chrome/Edge/Brave/Firefox address bars
-ipcMain.handle('get-active-video-urls', () => runVideoUrlScan());
-
-// Open PIP with a URL (mini browser approach 鈥?no capture needed)
-ipcMain.on('open-pip', (_event, { url, title, albumArt }: { url: string; title: string; albumArt?: string }) => {
-    createPipWindow(url, title, albumArt || lastSmtcAlbumArt || undefined);
-});
-
-// Return current SMTC source app ID (for renderer to query on-demand)
-ipcMain.handle('get-smtc-source', () => lastSmtcSourceAppId);
-
-// Close PIP window
-ipcMain.on('close-pip', () => {
-    if (pipWindow && !pipWindow.isDestroyed()) {
-        pipWindow.close();
-    }
-    pipWindow = null;
-});
-
 ipcMain.on('move-window', (event, { dx, dy }) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) {
@@ -1678,286 +1575,11 @@ ipcMain.on('launch-file', async (event, filePath) => {
     }
 });
 
-ipcMain.handle('get-melody-audio', async (_event, melodyName: string) => {
-    try {
-        const audioPath = path.join(__dirname, '../Assets/Melody', `${melodyName}.ogg`);
-        if (fs.existsSync(audioPath)) {
-            const buf = await fs.promises.readFile(audioPath);
-            return `data:audio/ogg;base64,${buf.toString('base64')}`;
-        }
-        return null;
-    } catch (e) {
-        console.error('Failed to load melody audio:', e);
-        return null;
-    }
-});
-
 // IPC map to expose the Hardware ID synchronously generated from LicenseManager
 ipcMain.handle('get-hwid', () => {
     return LicenseManager.getDeviceHWID();
 });
 
-// 鈹€鈹€鈹€ KoPlayer: OS Media Polling 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-function startMediaPolling() {
-    if (mediaPollingInterval) return;
-
-    if (isWin) {
-        // Use Worker thread for Windows SMTC to prevent main thread lock
-        try {
-            const workerPath = path.join(__dirname, 'smtc-worker.cjs');
-
-            smtcWorker = new Worker(workerPath);
-            smtcWorker.on('message', (msg) => {
-                if (msg.type === 'poll-result' && mainWindow) {
-                    const mediaData = msg.data;
-                    mainWindow.webContents.send('media-update', mediaData);
-
-                    // Video PiP: if the current media source is a browser, run a
-                    // background URL scan (debounced) and cache results for instant PiP open.
-                    if (mediaData) {
-                        const appId: string = (mediaData.sourceAppId || '').toLowerCase();
-                        lastSmtcSourceAppId = appId;
-                        lastSmtcAlbumArt = mediaData.albumArt || null;
-                        const isBrowser = BROWSER_APP_IDS.some(b => appId.includes(b));
-                        if (isBrowser) {
-                            const now = Date.now();
-                            if (now - lastVideoScanAt >= VIDEO_SCAN_DEBOUNCE_MS) {
-                                lastVideoScanAt = now;
-                                runVideoUrlScan().then(urls => {
-                                    mainWindow?.webContents.send('video-urls-update', urls);
-                                }).catch(() => {});
-                            }
-                        } else {
-                            // Non-browser source: clear cached video URLs
-                            mainWindow.webContents.send('video-urls-update', []);
-                        }
-                    } else {
-                        lastSmtcSourceAppId = '';
-                        lastSmtcAlbumArt = null;
-                        mainWindow.webContents.send('video-urls-update', []);
-                    }
-                }
-            });
-            smtcWorker.on('error', (err) => {
-                console.error('[KoPlayer] SMTC Worker error:', err);
-                stopMediaPolling();
-            });
-
-            // Start polling loop via Worker
-            mediaPollingInterval = setInterval(() => {
-                if (smtcWorker) smtcWorker.postMessage({ type: 'poll' });
-            }, 1500);
-
-        } catch (e) {
-            console.error('[KoPlayer] Failed to start SMTC Worker:', e);
-        }
-    } else if (isMac) {
-        // macOS polling: Birle艧ik AppleScript 鈥?System Events bypass
-        let macMediaPollingBusy = false;
-        mediaPollingInterval = setInterval(() => {
-            if (!mainWindow || macMediaPollingBusy) return;
-            macMediaPollingBusy = true;
-
-            // 1. Check which media apps are running 鈥?direct app query, no System Events permission needed
-            const checkAppsScript = `
-                try
-                    tell application "Spotify" to if it is running then return "Spotify"
-                end try
-                try
-                    tell application "Music" to if it is running then return "Music"
-                end try
-                return ""
-            `;
-
-            const checkChild = exec('osascript -', (err, stdout) => {
-                if (err) {
-                    macMediaPollingBusy = false;
-                    if (err.message && err.message.includes('-1743')) {
-                        mainWindow?.webContents.send('media-update', {
-                            title: '需要权限',
-                            artist: '在系统设置中启用自动化',
-                            albumArt: null,
-                            isPlaying: false
-                        });
-                    } else {
-                        mainWindow?.webContents.send('media-update', null);
-                    }
-                    return;
-                }
-                const targetApp = (stdout || '').trim();
-
-                // If none of our supported apps are running
-                if (!targetApp) {
-                    macMediaPollingBusy = false;
-                    mainWindow?.webContents.send('media-update', null);
-                    return;
-                }
-
-                // 2. Only build the script for the SPECIFIC app that is running.
-                // This completely bypasses the "-2741 identifier not found" compilation error for absent apps.
-                let fetchScript = '';
-
-                if (targetApp === 'Spotify') {
-                    fetchScript = `
-                        set isPlaying to false
-                        set nowTitle to ""
-                        set nowArtist to ""
-                        set nowArt to ""
-                        tell application "Spotify"
-                            try
-                                set nowTitle to name of current track
-                                set nowArtist to artist of current track
-                                set nowArt to artwork url of current track
-                                if player state is playing then set isPlaying to true
-                            end try
-                        end tell
-                        return nowTitle & "||" & nowArtist & "||" & (isPlaying as string) & "||" & nowArt
-                    `;
-                } else if (targetApp === 'Music') {
-                    fetchScript = `
-                        set isPlaying to false
-                        set nowTitle to ""
-                        set nowArtist to ""
-                        set nowArt to ""
-                        tell application "Music"
-                            try
-                                set nowTitle to name of current track
-                                set nowArtist to artist of current track
-                                if player state is playing then set isPlaying to true
-                            end try
-                        end tell
-                        return nowTitle & "||" & nowArtist & "||" & (isPlaying as string) & "||" & nowArt
-                    `;
-                } else if (targetApp === 'Chrome') {
-                    fetchScript = `
-                        set isPlaying to true
-                        set nowTitle to ""
-                        set nowArtist to "Google Chrome"
-                        tell application "Google Chrome"
-                            try
-                                set nowTitle to title of active tab of front window
-                            end try
-                        end tell
-                        return nowTitle & "||" & nowArtist & "||" & (isPlaying as string) & "||"
-                    `;
-                } else if (targetApp === 'Safari') {
-                    fetchScript = `
-                        set isPlaying to true
-                        set nowTitle to ""
-                        set nowArtist to "Safari"
-                        tell application "Safari"
-                            try
-                                set nowTitle to name of current tab of front window
-                            end try
-                        end tell
-                        return nowTitle & "||" & nowArtist & "||" & (isPlaying as string) & "||"
-                    `;
-                }
-
-                const child = exec('osascript -', (error, fetchStdout, fetchStderr) => {
-                    macMediaPollingBusy = false;
-                    if (error || !fetchStdout.trim()) {
-                        mainWindow?.webContents.send('media-update', null);
-                        return;
-                    }
-                    const parts = fetchStdout.trim().split('||');
-                    if (parts.length >= 3 && (parts[0] || parts[1])) {
-                        const macMediaData = {
-                            title: parts[0],
-                            artist: parts[1] || '',
-                            albumArt: parts[3] || null,
-                            isPlaying: parts[2] === 'true'
-                        };
-                        mainWindow?.webContents.send('media-update', macMediaData);
-                    } else {
-                        mainWindow?.webContents.send('media-update', null);
-                    }
-                });
-
-                if (child.stdin) {
-                    child.stdin.write(fetchScript);
-                    child.stdin.end();
-                }
-            });
-
-            if (checkChild.stdin) {
-                checkChild.stdin.write(checkAppsScript);
-                checkChild.stdin.end();
-            }
-        }, 3000); // macOS: 3s polling 鈥?balanced between responsiveness and CPU
-    }
-}
-
-function stopMediaPolling() {
-    if (mediaPollingInterval) {
-        clearInterval(mediaPollingInterval);
-        mediaPollingInterval = null;
-    }
-    if (smtcWorker) {
-        smtcWorker.terminate();
-        smtcWorker = null;
-    }
-}
-
-// 鈹€鈹€鈹€ KoPlayer: Media Command Handler 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-ipcMain.on('media-command', (_event, command: string) => {
-    if (isWin) {
-        // Use existing PowerShell process with user32.dll keybd_event
-        // VK_MEDIA_PLAY_PAUSE = 0xB3, VK_MEDIA_NEXT_TRACK = 0xB0, VK_MEDIA_PREV_TRACK = 0xB1
-        let vkCode = '';
-        switch (command) {
-            case 'play':
-            case 'pause':
-                vkCode = '0xB3';
-                break;
-            case 'next':
-                vkCode = '0xB0';
-                break;
-            case 'prev':
-                vkCode = '0xB1';
-                break;
-            default:
-                return;
-        }
-        if (psProcess && psProcess.stdin) {
-            psProcess.stdin.write(`[K]::keybd_event(${vkCode}, 0, 0, 0)\n[K]::keybd_event(${vkCode}, 0, 2, 0)\n`);
-        }
-    } else if (isMac) {
-        let macCmd = '';
-        switch (command) {
-            case 'play':
-            case 'pause':
-                macCmd = 'playpause';
-                break;
-            case 'next':
-                macCmd = 'next track';
-                break;
-            case 'prev':
-                macCmd = 'previous track';
-                break;
-        }
-        if (macCmd) {
-            const script = `
-                try
-                    tell application "System Events"
-                        set runningApps to name of every process
-                    end tell
-                    
-                    if runningApps contains "Spotify" then
-                        tell application "Spotify" to ${macCmd}
-                    else if runningApps contains "Music" then
-                        tell application "Music" to ${macCmd}
-                    end if
-                end try
-            `;
-            const childP = exec('osascript -');
-            if (childP.stdin) {
-                childP.stdin.write(script);
-                childP.stdin.end();
-            }
-        }
-    }
-});
 
 ipcMain.handle('is-dev', () => {
     return isDev;

@@ -8,7 +8,7 @@
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
-    "dev": "concurrently \"vite --port 5173 --strictPort\" \"tsc -w -p electron/tsconfig.json\" \"wait-on tcp:5173 && wait-on dist-electron/main.cjs && wait-on dist-electron/preload.cjs && wait-on dist-electron/smtc-worker.cjs && electron .\"",
+    "dev": "concurrently \"vite --port 5173 --strictPort\" \"tsc -w -p electron/tsconfig.json\" \"wait-on tcp:5173 && wait-on dist-electron/main.cjs && wait-on dist-electron/preload.cjs && electron .\"",
     "build": "tsc -b && vite build && tsc -p electron/tsconfig.json",
     "kobar-build": "node kobar-build.js",
     "lint": "eslint .",
@@ -107,9 +107,6 @@
     "remark-gfm": "^4.0.1",
     "turndown": "^7.2.4",
     "zustand": "^5.0.11"
-  },
-  "optionalDependencies": {
-    "@coooookies/windows-smtc-monitor": "^1.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

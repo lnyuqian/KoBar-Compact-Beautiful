@@ -1,14 +1,6 @@
 export { };
 
 declare global {
-    interface MediaData {
-        title: string;
-        artist: string;
-        albumArt: string | null;
-        isPlaying: boolean;
-        sourceAppId?: string;
-    }
-
     interface Window {
         React: any;
         ReactDOM: any;
@@ -47,8 +39,6 @@ declare global {
             launchFile: (path: string) => void;
             getFilePath: (file: File) => string;
 
-            // Focus Audio
-            getMelodyAudio: (name: string) => Promise<string | null>;
             // License API
             getHwid: () => Promise<string>;
             // Pin Injector
@@ -81,18 +71,6 @@ declare global {
             // Platform
             getPlatform: () => string;
             sendNotification: (title: string, body: string) => void;
-
-            // KoPlayer Media Controller
-            onMediaUpdate: (callback: (data: MediaData | null) => void) => (() => void);
-            sendMediaCommand: (command: 'play' | 'pause' | 'next' | 'prev') => void;
-
-            // PIP Video Player (webview-based mini browser)
-            getActiveVideoUrls: () => Promise<string[]>;
-            openPip: (url: string, title: string, albumArt?: string) => void;
-            closePip: () => void;
-            onPipClosed: (callback: () => void) => (() => void);
-            onVideoUrlsUpdate: (callback: (urls: string[]) => void) => (() => void);
-            getSmtcSource: () => Promise<string>;
 
             // KoCalendar
             fetchCalendarEvents: (timeMin: string, timeMax: string) => Promise<any[]>;
