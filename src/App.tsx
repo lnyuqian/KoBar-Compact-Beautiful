@@ -320,33 +320,23 @@ const App: React.FC = () => {
           <Sidebar />
           {!isMiniMode && (
             <>
-              {isLicensed && isNotePanelOpen && edgePosition === 'left' && (
-                <div className="absolute top-0 pointer-events-none" style={{ left: '100%', zIndex: 20 }}>
+              {/* Content panel hangs below the alien's chin, centered horizontally:
+                  the wrapper top edge is at chinTip-10 (lap 10px under the chin),
+                  so panel top = wrapper top keeps the 10px overlap and the
+                  left:50%/translateX(-50%) keeps it centered on the alien. */}
+              {isLicensed && isNotePanelOpen && (
+                <div className="absolute pointer-events-none" style={{ top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
                   <NotePanel />
                 </div>
               )}
-              {isLicensed && isNotePanelOpen && edgePosition === 'right' && (
-                <div className="absolute top-0 pointer-events-none" style={{ right: '100%', zIndex: 20 }}>
-                  <NotePanel />
-                </div>
-              )}
-              {isLicensed && isNotePanelOpen && edgePosition === 'top' && (
-                <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none pt-2" style={{ top: '100%', zIndex: 20 }}>
-                  <NotePanel />
-                </div>
-              )}
-              {isLicensed && isNotePanelOpen && edgePosition === 'bottom' && (
-                <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none pb-2" style={{ bottom: '100%', zIndex: 20 }}>
-                  <NotePanel />
-                </div>
-              )}
-
             </>
           )}
         </div>
       </div>
 
-      {isMiniMode && <FloatingEye />}
+      {/* The alien skin stays visible in both states: closed eye = collapsed,
+          open eye = expanded. Ear clicks toggle the panel. */}
+      <FloatingEye />
 
       {!IS_STORE_BUILD && !isLicensed && (
         <LicenseActivationModal onSuccess={() => setLicensed(true)} />

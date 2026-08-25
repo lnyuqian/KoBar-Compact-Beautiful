@@ -423,10 +423,10 @@ export const useAppStore = create<AppState>()(
                     if (!isMini) {
                         if (state.orientation === 'horizontal') {
                             // In horizontal mode, the static utilities (like the Eye button) are on the far right.
-                            // The eye button itself has a width of 48px, so its half-width is 24 * iconScale.
+                            // The alien art is 115px wide, so its half-width is 57.5 * iconScale.
                             // The horizontal container has a right padding of pr-2 (8px).
-                            // Thus, the distance from the center of the eye to the rightmost edge of the sidebar is:
-                            const centerToRight = (24 * state.iconScale) + 8;
+                            // Thus, the distance from the center of the alien to the rightmost edge of the sidebar is:
+                            const centerToRight = (57.5 * state.iconScale) + 8;
                             const sidebarY = pos.y - (state.sidebarWidth / 2);
                             updates.sidebarPosition = {
                                 x: pos.x - state.lastSidebarWidth + centerToRight,
@@ -438,15 +438,16 @@ export const useAppStore = create<AppState>()(
                             const sidebarCenterY = sidebarY + (state.sidebarWidth / 2);
                             updates.edgePosition = sidebarCenterY < (screenH / 2) ? 'top' : 'bottom';
                         } else {
-                            // Position the sidebar's bottom handle precisely where the eye was located
-                            // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
-                            // The eye button itself has a height of 48px, so its half-height is 24 * iconScale.
-                            // We add the bottom padding (8px from pb-2) to get the exact distance from the center of the button to the bottom of the sidebar.
-                            const centerToBottom = (24 * state.iconScale) + 8;
+                            // The expanded content panel hangs below the alien's chin:
+                            // its top edge sits 10px under the chin tip (the bottom 10px
+                            // of the alien art overlaps/occludes the panel top), and the
+                            // panel is centered horizontally on the alien (x mid aligns).
+                            // The alien art is 163px tall, so its half-height is 81.5 * iconScale.
+                            const chinTipY = pos.y + (81.5 * state.iconScale);
                             const sidebarX = pos.x - (state.sidebarWidth / 2);
                             updates.sidebarPosition = {
                                 x: sidebarX,
-                                y: pos.y - state.lastSidebarHeight + centerToBottom
+                                y: chinTipY - 10
                             };
 
                             // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side.

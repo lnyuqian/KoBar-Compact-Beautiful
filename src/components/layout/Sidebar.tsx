@@ -4,10 +4,6 @@ import { useAppStore } from '../../store/useAppStore';
 
 import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
 
-import TooltipButton from './TooltipButton';
-import { CartoonEye } from './MaskIcon';
-import dragIcon from '../../assets/icons/drag.svg';
-
 // The main process sizes the ghost window to the union of all displays and
 // exposes its center via a synchronous IPC call. The window size is stable for
 // the app session, so the result is cached after the first read.
@@ -26,13 +22,9 @@ function getGhostWidth(): number {
 }
 
 const Sidebar: React.FC = () => {
-    const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
     const edgePosition = useAppStore(state => state.edgePosition);
-    const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
-    const setMiniMode = useAppStore(state => state.setMiniMode);
     const isMiniMode = useAppStore(state => state.isMiniMode);
 
-    const t = useAppStore(state => state.t);
 
     const isMac = useAppStore(state => state.isMac);
     
@@ -41,11 +33,7 @@ const Sidebar: React.FC = () => {
 
 
 
-    const design = useAppStore(state => state.design);
     const sidebarWidth = useAppStore(state => state.sidebarWidth);
-    const iconScale = useAppStore(state => state.iconScale);
-    const toggleWidth = useAppStore(state => state.toggleWidth);
-    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
 
 
@@ -58,16 +46,9 @@ const Sidebar: React.FC = () => {
     const windowPosRef = React.useRef({ x: 0, y: 0 });
     
     const dragRef = React.useRef({ startX: 0, startY: 0, dragged: false });
-    const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
-    const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
 
-    const [isDev, setIsDev] = React.useState(false);
-
     React.useEffect(() => {
-        if (window.api?.isDev) {
-            window.api.isDev().then(setIsDev).catch(console.warn);
-        }
         // Prefetch display topology so cross-monitor drag detection works immediately
         // (avoid the async race where the info arrives after the user already started dragging)
         if (window.api?.getDisplaysInfo) {
@@ -435,192 +416,36 @@ const Sidebar: React.FC = () => {
 
 
 
-    // Eye icon cursor tracking
-    React.useEffect(() => {
-        if (!enableEyeAnimation) {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            }
-            return;
-        }
-
-        const handleGlobalMouseMove = (e: MouseEvent) => {
-            if (!innerEyeRef.current || !eyeButtonRef.current) return;
-            
-            const rect = eyeButtonRef.current.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
-            
-            const dx = e.clientX - btnX;
-            const dy = e.clientY - btnY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const maxTranslate = 5; // px
-            
-            if (distance > 0) {
-                const theta = Math.atan2(dy, dx);
-                const pull = Math.min(distance / 150, 1);
-                const tx = Math.cos(theta) * pull * maxTranslate;
-                const ty = Math.sin(theta) * pull * maxTranslate;
-                
-                innerEyeRef.current.style.transition = 'none';
-                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
-            } else {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        const handleMouseLeave = () => {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        window.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseleave', handleMouseLeave);
-        
-        return () => {
-            window.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseleave', handleMouseLeave);
-        };
-    }, [enableEyeAnimation]);
-
-    // Handle Eye Button: dual-purpose handle — drag moves the whole bar, click enters Mini Mode.
-    const handleEyeMouseDown = (e: React.MouseEvent) => {
-        if (e.button !== 0) return; // Left click only
-        e.preventDefault(); // Prevent accidental text selection
-        // Reset dragged flag before each interaction
-        dragRef.current = { startX: e.clientX, startY: e.clientY, dragged: false };
-        // Bridge: also kick off the sidebar drag so the Eye acts as a drag handle for the whole bar
-        handleSidebarDragStart(e);
-    };
-
-    const handleEyeClick = () => {
-        // If a real drag happened (handleSidebarDragMove set the flag), don't enter Mini Mode —
-        // the sidebar was already repositioned by the drag system.
-        if (dragRef.current.dragged) return;
-        // Use the eye button's actual DOM rect center for pixel-perfect alignment
-        if (eyeButtonRef.current) {
-            const rect = eyeButtonRef.current.getBoundingClientRect();
-            setMiniMode(true, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-        } else {
-            setMiniMode(true);
-        }
-    };
-
     return (
         <div className="relative z-50 pointer-events-none" style={{ width: orientation === 'horizontal' ? 'fit-content' : `${sidebarWidth}px`, height: orientation === 'horizontal' ? `${sidebarWidth}px` : 'fit-content' }}>
             <div 
                 ref={sidebarContainerRef}
                 className={`flex ${orientation === 'horizontal' ? 'flex-row pl-4 pr-2 h-full w-fit' : 'flex-col pt-4 pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
-                    ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
-                    ${design === 'style2' 
-                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)]') 
-                        : 'bg-[#323232] rounded-3xl shadow-2xl'}`}
+                    ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
                     maxWidth: orientation === 'horizontal' ? `${calculatedMaxWidth}px` : undefined,
-                    borderLeft: orientation === 'horizontal' ? '' : 'transparent',
-                    borderRight: orientation === 'horizontal' ? '' : 'transparent',
-                    borderTop: orientation === 'horizontal' ? 'transparent' : '',
-                    borderBottom: orientation === 'horizontal' ? 'transparent' : '',
-                    backgroundColor: '#323232'
+                    // Legacy black capsule removed: the alien skin is the panel body
+                    // now. This container stays transparent (it only anchors the
+                    // content panel layout / size bookkeeping).
+                    backgroundColor: 'transparent'
                 }}
             >
-                {/* 1a. Top/Left Drag Region & Branding */}
+                {/* 1a. Top/Left Drag Region & Branding — legacy hand icon removed;
+                    the alien skin (hair drag) now owns panel movement. The region
+                    stays as an invisible drag handle so dragging the panel still works. */}
                 <div 
                     className={`${orientation === 'horizontal' ? 'w-6 h-full -mr-2' : 'h-6 w-full -mb-2'} shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing`}
                     onMouseDown={handleSidebarDragStart}
-                >
-                    <img
-                        src={dragIcon}
-                        alt=""
-                        className="pointer-events-none"
-                        style={{ 
-                            width: 20 * iconScale * 1.2, 
-                            height: 20 * iconScale * 1.2,
-                            transform: 'translateY(-7px)'
-                        }}
-                    />
-                </div>
+                />
 
 <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
 
-               {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
-                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-0' : 'px-2 pb-0'}`}>
-                    <div style={{ zoom: iconScale }} className="transition-all">
-                        <TooltipButton
-                            label={t('miniMode')}
-                            buttonRef={eyeButtonRef}
-                            onMouseDown={handleEyeMouseDown}
-                            onClick={handleEyeClick}
-                            className={`w-12 h-12 rounded-full text-primary flex items-center justify-center transition-all hover:bg-white/10 cursor-grab active:cursor-grabbing group relative shadow-[0_0_20px_rgba(255,255,255,0.05)] ${orientation === 'horizontal' ? '' : 'mt-2'}`}
-                            style={{ backgroundColor: '#282828' }}
-                        >
-                            <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                                <CartoonEye size={34} />
-                            </span>
-                            {isDev && (
-                                <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
-                                    dev
-                                </span>
-                            )}
-                        </TooltipButton>
-                    </div>
-                </div>
+               {/* 1c. Bottom Static Utilities — legacy eye puck and the chevron
+                    toggle between the floating skin and the content panel were
+                    removed; the alien skin owns collapse/expand via eye clicks. */}
             </div>
-
-            <TooltipButton
-                label={t('toggleNotes')}
-                className={`absolute flex items-center justify-center transition-all shadow-2xl z-[60] 
-                    ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
-                    text-slate-400 hover:text-primary hover:bg-white/5`}
-                style={{ 
-                    backgroundColor: '#323232', 
-                    borderColor: 'transparent',
-                    ...(orientation === 'horizontal'
-                        ? {
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            height: `${toggleWidth}px`,
-                            width: '48px',
-                            ...(edgePosition === 'top'
-                                ? { top: '100%', borderTop: 'none', borderBottomRightRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' }
-                                : { bottom: '100%', borderBottom: 'none', borderTopRightRadius: design === 'style2' ? '15px' : '10px', borderTopLeftRadius: design === 'style2' ? '15px' : '10px' }
-                            )
-                        }
-                        : {
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: `${toggleWidth}px`,
-                            height: '48px',
-                            ...(edgePosition === 'left' 
-                                ? { right: `-${toggleWidth}px`, borderLeft: 'none', borderTopRightRadius: design === 'style2' ? '15px' : '10px', borderBottomRightRadius: design === 'style2' ? '15px' : '10px' }
-                                : { left: `-${toggleWidth}px`, borderRight: 'none', borderTopLeftRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' })
-                        }
-                    ),
-                    ...(design === 'style2' && !isMac ? { backdropFilter: 'blur(16px)' } : {}),
-                }}
-                onClick={() => {
-                    toggleNotePanel();
-                    // Panel open/close re-lays out the UI; refresh click-through
-                    // immediately (double rAF lets React commit first).
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => reEvaluateClickThrough());
-                    });
-                }}
-            >
-                <span className="material-symbols-outlined text-[20px]">
-                    {orientation === 'horizontal'
-                        ? (edgePosition === 'top' ? (isNotePanelOpen ? 'expand_less' : 'expand_more') : (isNotePanelOpen ? 'expand_more' : 'expand_less'))
-                        : (edgePosition === 'left' ? (isNotePanelOpen ? 'chevron_left' : 'chevron_right') : (isNotePanelOpen ? 'chevron_right' : 'chevron_left'))
-                    }
-                </span>
-            </TooltipButton>
         </div>
     );
 };

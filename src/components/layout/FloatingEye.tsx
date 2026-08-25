@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
-import { CartoonEyeClosed } from './MaskIcon';
+import alienOpen from '../../assets/alien-open.png';
+import alienClosed from '../../assets/alien-closed.png';
 
 // The main process sizes the ghost window to the union of all displays and
 // exposes its center via a synchronous IPC call. The window size is stable for
@@ -20,13 +21,18 @@ function getGhostWidth(): number {
     return getGhostCenter().x * 2;
 }
 
+// Alien skin sizing: the source art is 100x142. Displayed at 115px wide it is
+// 2.4x the original 48px puck footprint and 1.2x the 96px iteration (height
+// follows ratio).
+const ALIEN_W = 115;
+const ALIEN_H = Math.round(115 * 142 / 100); // 163
 
 const FloatingEye: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const miniModePosition = useAppStore(state => state.miniModePosition);
     const iconScale = useAppStore(state => state.iconScale);
     const screenBounds = useAppStore(state => state.screenBounds);
-    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
+    const isMiniMode = useAppStore(state => state.isMiniMode);
 
     // Calculate safe fallback coordinates using actual monitor dimensions.
     // The ghost window is 6000×4000, but the visible area matches `screenBounds`.
@@ -57,8 +63,6 @@ const FloatingEye: React.FC = () => {
     const [pos, setPos] = useState({ x: defaultX, y: defaultY });
     const posRef = useRef({ x: defaultX, y: defaultY });
     const containerRef = useRef<HTMLDivElement>(null);
-    const innerEyeRef = useRef<HTMLSpanElement>(null);
-    const eyeButtonRef = useRef<HTMLButtonElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isDev, setIsDev] = useState(false);
     const dragInitRef = useRef({ dragged: false, offsetX: 0, offsetY: 0 });
@@ -79,10 +83,50 @@ const FloatingEye: React.FC = () => {
         }
     }, []);
 
-    // Removed local boundary clamping so it can live anywhere in the unbound OS window
+    // Hit-test zones on the alien art (normalized 0..1 over the displayed box):
+    //   - hair region (top ~34%): drag handle
+    //   - eye zone (center, deliberately enlarged for easy hitting): toggle
+    //     collapse/expand. Only the eye toggles — the ears/face do nothing.
+    const hitZone = (e: React.MouseEvent): 'hair' | 'eye' | 'none' => {
+        const el = containerRef.current;
+        if (!el) return 'none';
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return 'none';
+        const rx = (e.clientX - rect.left) / rect.width;
+        const ry = (e.clientY - rect.top) / rect.height;
+        if (ry < 0.34) return 'hair';
+        if (ry >= 0.30 && ry < 0.80 && rx >= 0.20 && rx <= 0.80) return 'eye';
+        return 'none';
+    };
+
+    const togglePanel = () => {
+        const st = useAppStore.getState();
+        const goingMini = !st.isMiniMode;
+        // Expand shows the content panel (notes); collapse hides it. The ear-click
+        // toggle logic was merged here: clicking the eye now owns both directions.
+        st.setNotePanelOpen(!goingMini);
+        st.setMiniMode(goingMini, { x: posRef.current.x, y: posRef.current.y });
+        // Re-evaluate mouse click-through immediately: toggling re-lays out the UI,
+        // so the ignore-mouse state must be refreshed right away instead of waiting
+        // for the next mousemove. Double rAF waits for React to commit the change.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => reEvaluateClickThrough());
+        });
+    };
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0) return; // Only left click
+        const zone = hitZone(e);
+
+        // The eye zone toggles the content panel (collapsed ⇄ expanded).
+        if (zone === 'eye') {
+            e.preventDefault();
+            togglePanel();
+            return;
+        }
+        // Only the hair region starts a drag.
+        if (zone !== 'hair') return;
+
         e.preventDefault(); // Prevent text selection during drag
         setIsDragging(true);
         setIsResizingGlobal(true); // Prevent transparent click-through issues globally
@@ -172,6 +216,19 @@ const FloatingEye: React.FC = () => {
                 containerRef.current.style.left = `${newX}px`;
                 containerRef.current.style.top = `${newY}px`;
             }
+
+            // Drag the expanded content panel in lockstep so it follows the alien
+            // in real time (no jump on release). The panel is only visible when
+            // expanded, so skip this while in mini mode.
+            if (!useAppStore.getState().isMiniMode && (dx !== 0 || dy !== 0)) {
+                const wrapper = document.getElementById('kobar-sidebar-wrapper');
+                if (wrapper) {
+                    const curLeft = parseFloat(wrapper.style.left || '0');
+                    const curTop = parseFloat(wrapper.style.top || '0');
+                    wrapper.style.left = `${curLeft + dx}px`;
+                    wrapper.style.top = `${curTop + dy}px`;
+                }
+            }
         };
 
         const handleMouseUp = async () => {
@@ -184,7 +241,7 @@ const FloatingEye: React.FC = () => {
                 if (dragInitRef.current.dragged) {
                     let finalPos = { x: posRef.current.x, y: posRef.current.y };
                     if (window.api?.recenterWindowOnWidget && !isMac) {
-                        const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, 48, 48);
+                        const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, ALIEN_W, ALIEN_H);
                         if (result) {
                             finalPos = { x: result.x, y: result.y };
                         }
@@ -192,8 +249,9 @@ const FloatingEye: React.FC = () => {
 
                     // Re-sync React state once drag completes
                     setPos(finalPos);
-                    // Persist the final position to global store so Sidebar knows where the Eye was
-                    useAppStore.getState().setMiniMode(true, finalPos);
+                    // Persist the final position, keeping the current collapse state
+                    // (dragging while expanded re-aligns the panel next to the alien).
+                    useAppStore.getState().setMiniMode(useAppStore.getState().isMiniMode, finalPos);
                 }
             }
         };
@@ -208,74 +266,9 @@ const FloatingEye: React.FC = () => {
         };
     }, [isDragging]);
 
-    // Eye icon cursor tracking
-    useEffect(() => {
-        if (!enableEyeAnimation) {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            }
-            return;
-        }
-
-        const handleGlobalMouseMove = (e: MouseEvent) => {
-            if (!innerEyeRef.current || !eyeButtonRef.current) return;
-            
-            const rect = eyeButtonRef.current.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
-            
-            const dx = e.clientX - btnX;
-            const dy = e.clientY - btnY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const maxTranslate = 6; // px
-            
-            if (distance > 0) {
-                const theta = Math.atan2(dy, dx);
-                const pull = Math.min(distance / 150, 1);
-                const tx = Math.cos(theta) * pull * maxTranslate;
-                const ty = Math.sin(theta) * pull * maxTranslate;
-                
-                innerEyeRef.current.style.transition = 'none';
-                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
-            } else {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        const handleMouseLeave = () => {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        window.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseleave', handleMouseLeave);
-        
-        return () => {
-            window.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseleave', handleMouseLeave);
-        };
-    }, [enableEyeAnimation]);
-
-    const handleClick = () => {
-        if (!dragInitRef.current.dragged) {
-            // Persist current Eye position so Sidebar opens at the same spot
-            useAppStore.getState().setMiniMode(false, { x: posRef.current.x, y: posRef.current.y });
-            // Re-evaluate mouse click-through immediately: closing the eye re-lays out
-            // the UI, so the ignore-mouse state must be refreshed right away instead of
-            // waiting for the next mousemove (otherwise clicks pass through to the OS).
-            // Double rAF: first waits for the current frame, second runs after
-            // React has committed the layout change (sidebar reappears at the eye
-            // position), so elementFromPoint sees the updated UI.
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => reEvaluateClickThrough());
-            });
-        }
-    };
+    // Skin: closed eye = panel collapsed (mini mode), open eye = panel expanded.
+    // Matches the previous logic where the closed-eye puck was shown while collapsed.
+    const alienSrc = isMiniMode ? alienClosed : alienOpen;
 
     return (
         <div
@@ -283,24 +276,31 @@ const FloatingEye: React.FC = () => {
             className="fixed z-[999] pointer-events-auto"
             style={{ left: pos.x, top: pos.y, transform: `translate(-50%, -50%) scale(${iconScale})`, transformOrigin: 'center center' }}
             onMouseDown={handleMouseDown}
-            onClick={handleClick}
         >
-            <button 
-                ref={eyeButtonRef}
-                className={`w-12 h-12 rounded-full text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative shadow-[0_0_20px_rgba(255,255,255,0.05)]`}
-                style={{
-                    backgroundColor: '#282828'
-                }}
-            >
-                <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                    <CartoonEyeClosed size={34} />
-                </span>
+            <div className="relative select-none" style={{ width: ALIEN_W, height: ALIEN_H }}>
+                <img
+                    src={alienSrc}
+                    alt={isMiniMode ? 'KoBar 外星人（闭眼）' : 'KoBar 外星人（睁眼）'}
+                    draggable={false}
+                    className="pointer-events-none absolute inset-0 w-full h-full"
+                    style={{ objectFit: 'contain' }}
+                />
+                {/* Drag handle: hair region (top) — cursor shows grab */}
+                <div
+                    className="absolute inset-x-0 top-0 cursor-grab active:cursor-grabbing"
+                    style={{ height: '34%' }}
+                />
+                {/* Toggle zone: eye area (center, enlarged) — cursor shows pointer */}
+                <div
+                    className="absolute cursor-pointer"
+                    style={{ left: '20%', top: '30%', width: '60%', height: '50%' }}
+                />
                 {isDev && (
                     <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
                         dev
                     </span>
                 )}
-            </button>
+            </div>
         </div>
     );
 };

@@ -31,14 +31,10 @@ const NotePanel: React.FC = () => {
     const isMac = useAppStore(state => state.isMac);
     const isEditing = useAppStore(state => state.isEditing);
     const setIsEditing = useAppStore(state => state.setIsEditing);
-    const edgePosition = useAppStore(state => state.edgePosition);
 
-    // Keep the tabs header inset aligned to the screen edge when the panel is
-    // docked to either side. The screen-edge side gets the larger inset;
-    // top/bottom docking keeps the same small inset on both sides.
-    // (Content area below uses a fixed 2% inset, independent of docking.)
-    const panelPaddingLeft = edgePosition === 'left' ? 7 : 2;
-    const panelPaddingRight = edgePosition === 'right' ? 7 : 2;
+    // Tabs header inset: centered with a uniform 3% margin on both sides.
+    const panelPaddingLeft = 3;
+    const panelPaddingRight = 3;
 
     // Copy the active note's full text (plain text from the stored HTML)
     const [copied, setCopied] = useState(false);
