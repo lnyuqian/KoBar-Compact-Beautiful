@@ -43,6 +43,21 @@ export function setIsResizingGlobal(v: boolean) {
 let lastMouseX = 0;
 let lastMouseY = 0;
 
+// Force-reposition hook for the floating alien. The tray's "传送到中心" moves the
+// ghost window, but the alien's DOM position only updates when `miniModePosition`
+// reference changes — a same-value store set bails out and leaves the alien stuck
+// at its old spot (the "click does nothing" symptom). The skin registers a
+// reposition callback here so force-center can always move it, even when the
+// store value is unchanged.
+type RepositionFn = (pos: { x: number; y: number }) => void;
+let floatingEyeReposition: RepositionFn | null = null;
+export function registerFloatingEyeReposition(fn: RepositionFn | null) {
+    floatingEyeReposition = fn;
+}
+export function repositionFloatingEye(pos: { x: number; y: number }) {
+    floatingEyeReposition?.(pos);
+}
+
 // Re-evaluate the transparent window's mouse click-through state at the current cursor.
 // MUST be called after any drag/resize ends, otherwise the full-screen ghost window
 // keeps swallowing all clicks when the mouse stays still.
@@ -189,7 +204,11 @@ const App: React.FC = () => {
         const isMac = useAppStore.getState().isMac;
         // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
         const ghostCenterX = window.api?.getGhostCenterSync?.().x ?? Math.floor(window.innerWidth / 2);
-        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : ghostCenterX, y: Math.floor(visibleHeight / 2) });
+        const center = { x: isMac ? Math.floor(window.innerWidth / 2) : ghostCenterX, y: Math.floor(visibleHeight / 2) };
+        useAppStore.getState().setMiniMode(true, center);
+        // Force the alien's DOM position even when the store value is unchanged
+        // (bail-out would otherwise leave it stuck at its old spot).
+        repositionFloatingEye(center);
       }));
     }
     if (window.api?.onResetUiPosition) {

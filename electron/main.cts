@@ -177,15 +177,17 @@ function createWindow() {
 
     mainWindow.once('ready-to-show', () => {
         if (mainWindow) {
-            const loginSettings = app.getLoginItemSettings();
-            const isHidden = process.argv.includes('--hidden') || loginSettings.wasOpenedAtLogin;
+            // Startup from login item: still show the floating panel. The old
+            // "silent launch" branch (--hidden / wasOpenedAtLogin → skip show())
+            // left the tray alive but the floating UI invisible, which reads as
+            // "panel missing after auto-start". The tray's show/hide toggle is
+            // the intended way to hide it, so always surface the window here.
+            const showOnBoot = !process.argv.includes('--hidden');
 
-            // Teleport to center on fresh boot and force Mini Mode (pass showWindow flag based on args)
-            teleportToPrimaryCenter(!isHidden);
+            // Teleport to center on fresh boot and force Mini Mode
+            teleportToPrimaryCenter(showOnBoot);
 
-            if (!isHidden) {
-                mainWindow.show();
-            }
+            mainWindow.show();
             mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
             if (isMac) {
                 // Re-enforce workspace visibility after window is fully loaded
