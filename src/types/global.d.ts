@@ -92,6 +92,7 @@ declare global {
             saveNotesToDir: (dir: string, notes: Array<{ title: string; content: string; isSettings?: boolean; isFavorite?: boolean }>) => Promise<{ success: boolean; reason?: string }>;
 
             isDev: () => Promise<boolean>;
+            getBootState: () => Promise<{ isDev: boolean; isHidden: boolean; wasOpenedAtLogin: boolean }>;
 
         };
     }

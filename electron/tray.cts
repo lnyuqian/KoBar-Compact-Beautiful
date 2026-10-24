@@ -60,8 +60,11 @@ export function createTray(options: TrayOptions): Tray {
             }
         },
         {
-            label: '传送到中心',
-            click: onTeleport
+            // Was "传送到中心" (teleport to centre). The floating eye now has a
+            // fixed boot anchor — right edge, 200px below the top (2026-10-24) —
+            // so this entry resets it to that anchor instead of the screen centre.
+            label: '重置到右上角',
+            click: () => onTeleport()
         },
         { type: 'separator' },
         {

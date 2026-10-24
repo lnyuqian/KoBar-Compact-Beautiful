@@ -72,7 +72,7 @@ let windowTrackOutBuffer = '';
 let windowTrackIdleTimer: NodeJS.Timeout | null = null;
 
 // Set these flags for feature toggling (managed by kobar-build.js)
-const IS_STORE_BUILD = true;
+const IS_STORE_BUILD = false;
 
 // Set Application User Model ID to fix Windows Taskbar, Notifications, and Task Manager Startup icons
 const AUMID = isDev ? 'com.eedali.kobar.dev' : 'com.eedali.kobar';
@@ -182,9 +182,12 @@ function createWindow() {
             // left the tray alive but the floating UI invisible, which reads as
             // "panel missing after auto-start". The tray's show/hide toggle is
             // the intended way to hide it, so always surface the window here.
+            // Fixed 2026-10-24: the eye is anchored to the right edge, 200px from
+            // the top (see computeBootEyePosition in src/App.tsx).
             const showOnBoot = !process.argv.includes('--hidden');
 
-            // Teleport to center on fresh boot and force Mini Mode
+            // Anchor the ghost window to the primary display, then force Mini Mode
+            // so the floating eye is visible immediately after boot.
             teleportToPrimaryCenter(showOnBoot);
 
             mainWindow.show();
@@ -329,7 +332,9 @@ function teleportToPrimaryCenter(showWindow = true) {
     // position so the visual UI and the actual click targets stay aligned.
     mainWindow.webContents.send('reset-ui-position');
 
-    // Force the frontend to reset to Mini Mode and position perfectly at the center
+    // Force the frontend to surface the floating eye in Mini Mode at its fixed
+    // anchor: right screen edge, 200px below the top (computeBootEyePosition in
+    // src/App.tsx). The event name is historical — it no longer centres the eye.
     mainWindow.webContents.send('force-center-mini-mode');
 }
 
@@ -1585,6 +1590,19 @@ ipcMain.handle('get-hwid', () => {
 
 ipcMain.handle('is-dev', () => {
     return isDev;
+});
+
+// Startup visibility state for the renderer. The "force-center-mini-mode" push
+// can be lost if the renderer's listeners aren't mounted yet (racy on auto-start
+// boot), which left the floating panel invisible until a manual restart. The
+// renderer polls this on mount so it reliably enters mini mode regardless of the
+// push's timing.
+ipcMain.handle('get-boot-state', () => {
+    return {
+        isDev,
+        isHidden: process.argv.includes('--hidden'),
+        wasOpenedAtLogin: app.getLoginItemSettings().wasOpenedAtLogin,
+    };
 });
 
 ipcMain.handle('start-eyedropper', async () => {

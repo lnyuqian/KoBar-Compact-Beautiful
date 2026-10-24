@@ -58,6 +58,29 @@ export function repositionFloatingEye(pos: { x: number; y: number }) {
     floatingEyeReposition?.(pos);
 }
 
+// ─── Boot position of the floating eye ────────────────────────────────────────
+// Fixed by request (2026-10-24): the eye must show up hugging the RIGHT edge of
+// the screen, 200px below the top edge — on every launch, including the
+// login-item (auto-start) launch, which previously stayed hidden.
+// Ghost-window coordinates have their origin at the primary display's workArea
+// top-left, so a plain y=200 is exactly "200px from the top of the screen".
+export const BOOT_EYE_TOP_OFFSET = 200; // physical px below the top edge
+export const BOOT_EYE_RIGHT_INSET = 50; // physical px between eye centre and the right edge
+export function computeBootEyePosition(): { x: number; y: number } {
+    // Resolution/scale adaptive: the ghost window spans the primary display and is
+    // laid out in CSS px, so `window.innerWidth` is already "this screen's width"
+    // at whatever resolution and display scaling the user has (e.g. 2103 CSS px
+    // for a 1920px screen at devicePixelRatio 0.913). The requested offsets are
+    // PHYSICAL px, so convert them: 1 CSS px = dpr physical px.
+    const dpr = window.devicePixelRatio || 1;
+    const cssPerPhys = 1 / dpr;
+    const screenWCss = window.innerWidth || window.screen.width || 1920;
+    return {
+        x: Math.round(screenWCss - BOOT_EYE_RIGHT_INSET * cssPerPhys),
+        y: Math.round(BOOT_EYE_TOP_OFFSET * cssPerPhys),
+    };
+}
+
 // Re-evaluate the transparent window's mouse click-through state at the current cursor.
 // MUST be called after any drag/resize ends, otherwise the full-screen ghost window
 // keeps swallowing all clicks when the mouse stays still.
@@ -69,7 +92,7 @@ export function reEvaluateClickThrough() {
 }
 
 // Set these flags for component-level feature toggling (managed by kobar-build.js)
-export const IS_STORE_BUILD = true;
+export const IS_STORE_BUILD = false;
 export const ENABLE_LICENSING = false;
 
 const App: React.FC = () => {
@@ -109,6 +132,28 @@ const App: React.FC = () => {
     // Keep the store in sync so internal UI (e.g. slider styles) uses glass style2.
     useAppStore.getState().setTheme?.('amethyst');
     useAppStore.getState().setDesign?.('style2');
+  }, [isHydrated]);
+
+  // Auto-start reliability: the main process pushes "force-center-mini-mode"
+  // on ready-to-show, but that one-shot event can be missed if this component's
+  // listeners aren't mounted yet (racy during boot). Poll the boot state here so
+  // the app reliably enters mini mode and shows the floating eye.
+  // Fixed by request (2026-10-24): the login-item launch used to pass --hidden,
+  // which suppressed the floating panel entirely (tray icon only). The eye is now
+  // surfaced on EVERY launch — auto-start included — at the right edge, 200px down.
+  useEffect(() => {
+    if (!isHydrated) return;
+    let cancelled = false;
+    window.api?.getBootState?.()
+      .then((state) => {
+        if (cancelled) return;
+        void state; // isHidden/wasOpenedAtLogin must not hide the floating panel any more
+        const pos = computeBootEyePosition();
+        useAppStore.getState().setMiniMode(true, pos);
+        repositionFloatingEye(pos);
+      })
+      .catch(() => { /* push path still covers it */ });
+    return () => { cancelled = true; };
   }, [isHydrated]);
 
   // Auto-sync notes to the configured save folder.
@@ -199,16 +244,14 @@ const App: React.FC = () => {
     }
     if (window.api?.onForceCenterMiniMode) {
       unsubs.push(window.api.onForceCenterMiniMode(() => {
-        const screenBounds = useAppStore.getState().screenBounds;
-        const visibleHeight = screenBounds?.height ?? 800;
-        const isMac = useAppStore.getState().isMac;
-        // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
-        const ghostCenterX = window.api?.getGhostCenterSync?.().x ?? Math.floor(window.innerWidth / 2);
-        const center = { x: isMac ? Math.floor(window.innerWidth / 2) : ghostCenterX, y: Math.floor(visibleHeight / 2) };
-        useAppStore.getState().setMiniMode(true, center);
+        // Main process asks us to surface the mini-mode eye (boot ready-to-show /
+        // tray teleport). Fixed by request (2026-10-24): anchor it to the RIGHT
+        // edge, 200px below the top, instead of the centre of the screen.
+        const pos = computeBootEyePosition();
+        useAppStore.getState().setMiniMode(true, pos);
         // Force the alien's DOM position even when the store value is unchanged
         // (bail-out would otherwise leave it stuck at its old spot).
-        repositionFloatingEye(center);
+        repositionFloatingEye(pos);
       }));
     }
     if (window.api?.onResetUiPosition) {

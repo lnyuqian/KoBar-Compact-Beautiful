@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { setIsResizingGlobal, reEvaluateClickThrough } from '../../App';
-import { CartoonEyeClosed } from './MaskIcon';
+import { CartoonEye } from './MaskIcon';
 
 // The main process sizes the ghost window to the union of all displays and
 // exposes its center via a synchronous IPC call. The window size is stable for
@@ -22,34 +22,20 @@ function getGhostWidth(): number {
 
 
 const FloatingEye: React.FC = () => {
-    const edgePosition = useAppStore(state => state.edgePosition);
     const miniModePosition = useAppStore(state => state.miniModePosition);
     const iconScale = useAppStore(state => state.iconScale);
-    const screenBounds = useAppStore(state => state.screenBounds);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
 
-    // Calculate safe fallback coordinates using actual monitor dimensions.
-    // The ghost window is 6000×4000, but the visible area matches `screenBounds`.
-    // Using window.innerWidth/Height (6000/4000) would place the Eye at Y=2000,
-    // far off-screen on most monitors. Instead, use screenBounds as the sizing reference.
-    const visibleH = screenBounds?.height ?? 800;
-    const visibleW = screenBounds?.width ?? 1920;
-
-    // For X: place the Eye near the current edge within the visible viewport.
-    // The sidebar is centered in the ghost window via CSS justify-center,
-    // so its left offset ≈ (6000 - sidebarWidth) / 2.
-    // For the fallback, stay near the sidebar's edge:
-    // left edge → slightly inward from the sidebar's expected CSS position
-    // right edge → slightly inward from the other side
+    // Fallback position, fixed by request (2026-10-24): hugging the RIGHT edge of
+    // the screen, 200px below the top edge — measured in PHYSICAL screen pixels.
+    // Adaptive on any resolution / display scaling: the ghost window spans the
+    // primary display in CSS px (window.innerWidth), so convert physical → CSS
+    // by dividing by the device pixel ratio (1.095 CSS px per physical px here).
     const isMac = useAppStore(state => state.isMac);
-    const centerX = isMac ? Math.floor(window.innerWidth / 2) : getGhostCenter().x;
-    const safeDefaultX = edgePosition === 'left'
-        ? (centerX - visibleW / 2 + 60)   // Near left edge of visible area within ghost window
-        : (centerX + visibleW / 2 - 60);  // Near right edge of visible area within ghost window
-
-    // For Y: the sidebar starts at CSS top ≈ 20px. Place the Eye at the
-    // vertical center of the visible monitor area, referenced from that origin.
-    const safeDefaultY = 20 + (visibleH / 2);
+    const cssPerPhys = 1 / (window.devicePixelRatio || 1);
+    const screenWCss = window.innerWidth || window.screen.width || 1920;
+    const safeDefaultX = Math.round(screenWCss - 50 * cssPerPhys); // 50 physical px from the right edge
+    const safeDefaultY = Math.round(200 * cssPerPhys);             // 200 physical px below the top
 
     const defaultX = miniModePosition?.x ?? safeDefaultX;
     const defaultY = miniModePosition?.y ?? safeDefaultY;
@@ -293,7 +279,7 @@ const FloatingEye: React.FC = () => {
                 }}
             >
                 <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                    <CartoonEyeClosed size={34} />
+                    <CartoonEye size={34} />
                 </span>
                 {isDev && (
                     <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">

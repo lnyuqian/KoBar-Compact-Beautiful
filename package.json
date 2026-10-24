@@ -16,6 +16,9 @@
   },
   "build": {
     "appId": "com.eedali.kobar",
+    "toolsets": {
+      "winCodeSign": "1.1.0"
+    },
     "publish": [
       {
         "provider": "github",
@@ -38,6 +41,9 @@
     "win": {
       "target": [
         "nsis"
+      ],
+      "signExts": [
+        "!.exe"
       ]
     },
     "nsis": {

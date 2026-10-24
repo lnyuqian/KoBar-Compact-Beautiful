@@ -136,5 +136,6 @@ contextBridge.exposeInMainWorld('api', {
     sendNotification: (title: string, body: string) => ipcRenderer.send('send-notification', { title, body }),
 
     isDev: () => ipcRenderer.invoke('is-dev') as Promise<boolean>,
+    getBootState: () => ipcRenderer.invoke('get-boot-state') as Promise<{ isDev: boolean; isHidden: boolean; wasOpenedAtLogin: boolean }>,
 
 });
